@@ -1,37 +1,10 @@
 const express = require('express');
 const router = express.Router();
-// multer config for file uploads
-const multer = require('multer');
-const path = require('path');
+const controller = require('../controllers/company.controller');
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/')
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname))
-    }
-});
+router.get('/', controller.findAll);
 
-const upload = multer({ storage: storage });
-
-// Mock Data
-let companies = [
-    { id: 1, name: 'Volkswagen de México', address: 'Autopista', contact: 'Juan Pérez', email: 'rh@vw.com.mx' }
-];
-
-router.get('/', (req, res) => {
-    res.json(companies);
-});
-
-router.post('/', upload.single('file'), (req, res) => {
-    const newCompany = {
-        id: Date.now(),
-        ...req.body,
-        fileName: req.file ? req.file.filename : null
-    };
-    companies.push(newCompany);
-    res.status(201).json(newCompany);
-});
+// Keep existing POST for manual creation if needed, or refactor to controller
+// For now, focusing on the List (GET) aspect requested.
 
 module.exports = router;
