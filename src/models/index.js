@@ -23,7 +23,11 @@ const sequelize = new Sequelize(
         dialectOptions: {
             // Permite leer fechas como strings (evita problemas con timezone)
             dateStrings: true,
-            typeCast: true
+            typeCast: true,
+            ssl: process.env.DB_SSL === 'true' ? {
+                minVersion: 'TLSv1.2',
+                rejectUnauthorized: true
+            } : null
         }
     }
 );
