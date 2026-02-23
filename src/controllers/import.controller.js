@@ -114,10 +114,12 @@ exports.clearStudents = async (req, res) => {
         if (req.user.role !== 'ROOT') {
             return res.status(403).json({ message: 'Solo root puede borrar todos los alumnos' });
         }
-        await Student.destroy({ where: {}, truncate: true });
+        // Eliminamos usando DELETE FROM para evitar problemas con TRUNCATE y FKs
+        await Student.destroy({ where: {}, cascade: true });
         res.json({ message: 'Tabla de alumnos limpiada correctamente' });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Error al limpiar alumnos:', err);
+        res.status(500).json({ message: 'Error al limpiar la tabla de alumnos', error: err.message });
     }
 };
 
@@ -127,9 +129,11 @@ exports.clearCompanies = async (req, res) => {
         if (req.user.role !== 'ROOT') {
             return res.status(403).json({ message: 'Solo root puede borrar todas las empresas' });
         }
-        await Company.destroy({ where: {}, truncate: true });
+        // Eliminamos usando DELETE FROM
+        await Company.destroy({ where: {} });
         res.json({ message: 'Tabla de empresas limpiada correctamente' });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Error al limpiar empresas:', err);
+        res.status(500).json({ message: 'Error al limpiar la tabla de empresas', error: err.message });
     }
 };
