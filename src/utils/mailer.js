@@ -5,12 +5,14 @@ const createTransport = async () => {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         return nodemailer.createTransport({
             host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.EMAIL_PORT) || 465,
-            secure: process.env.EMAIL_SECURE === 'true' || (process.env.EMAIL_PORT == 465),
+            port: parseInt(process.env.EMAIL_PORT) || 587,
+            secure: process.env.EMAIL_SECURE === 'true', // true para 465, false para 587 (STARTTLS)
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
-            }
+            },
+            connectionTimeout: 10000, // 10 segundos para conectar
+            greetingTimeout: 10000    // 10 segundos para saludo SMTP
         });
     }
     // Desarrollo: Ethereal Mail (ficticio)
