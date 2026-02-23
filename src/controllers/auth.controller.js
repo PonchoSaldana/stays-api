@@ -41,9 +41,9 @@ exports.checkMatricula = async (req, res) => {
             status: 'onboarding',
             name: student.name,
             matricula: student.matricula,
-            // Si ya vinculó correo pero no terminó, lo pre-rellenamos
+            // Informamos si ya vinculó correo, pero NO lo enviamos para evitar que se pre-rellene por privacidad
             emailAlreadySet: !!student.email,
-            email: student.email || null
+            email: null
         });
 
     } catch (err) {
