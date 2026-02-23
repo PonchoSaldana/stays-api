@@ -1,10 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/company.controller');
+const ctrl = require('../controllers/company.controller');
+const { verifyToken, verifyAdmin } = require('../utils/jwt');
 
-router.get('/', controller.findAll);
+// ── Listar empresas (cualquier usuario autenticado puede ver el catálogo) ──────
+router.get('/', verifyToken, ctrl.findAll);
 
-// Keep existing POST for manual creation if needed, or refactor to controller
-// For now, focusing on the List (GET) aspect requested.
+// ── Ver una empresa ────────────────────────────────────────────────────────────
+router.get('/:id', verifyToken, ctrl.findOne);
+
+// ── Crear empresa (solo admin) ─────────────────────────────────────────────────
+router.post('/', verifyAdmin, ctrl.create);
+
+// ── Actualizar empresa (solo admin) ───────────────────────────────────────────
+router.put('/:id', verifyAdmin, ctrl.update);
+
+// ── Eliminar empresa (solo admin) ─────────────────────────────────────────────
+router.delete('/:id', verifyAdmin, ctrl.remove);
 
 module.exports = router;

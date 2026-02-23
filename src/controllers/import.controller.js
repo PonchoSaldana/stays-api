@@ -5,27 +5,24 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 const { clean, getValue } = require('../utils/excelHelper');
 
+// ─── Importar alumnos desde Excel ────────────────────────────────────────────
 exports.importStudents = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).send({ message: "Please upload an Excel file!" });
-        }
+    if (!req.file) return res.status(400).json({ message: 'Por favor sube un archivo Excel' });
 
-        const path = req.file.path;
-        const workbook = xlsx.readFile(path);
+    const filePath = req.file.path;
+    try {
+        const workbook = xlsx.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-        console.log(`📥 Procesando ${rows.length} filas del Excel`);
         const students = [];
-
-        rows.forEach((row, index) => {
+        rows.forEach((row) => {
             const matricula = clean(getValue(row, ['Matrícula', 'Matricula', 'matricula']));
             const nombre = clean(getValue(row, ['Nombre', 'nombre', 'Nombre Completo']));
 
             if (matricula && nombre && matricula.toLowerCase() !== 'matrícula') {
-                const student = {
-                    matricula: matricula,
+                students.push({
+                    matricula,
                     name: nombre,
                     careerName: clean(getValue(row, ['Carrera', 'carrera', 'Carrera (Nombre)'])),
                     grade: clean(getValue(row, ['Grado', 'grado', 'Cuatrimestre', 'Semestre'])),
@@ -33,102 +30,104 @@ exports.importStudents = async (req, res) => {
                     shift: clean(getValue(row, ['Turno', 'turno'])),
                     generation: clean(getValue(row, ['Generación', 'Generacion', 'generacion'])),
                     director: clean(getValue(row, ['NOMBRE DEL DIRECTOR', 'Nombre del Director', 'Director']))
-                };
-                students.push(student);
-
-                // Log primeras 3 matrículas para debug
-                if (index < 3) {
-                    console.log(`  ✓ Fila ${index + 1}: Matrícula="${student.matricula}" Nombre="${student.name}"`);
-                }
+                });
             }
         });
 
-        console.log(`💾 Guardando ${students.length} estudiantes en la BD...`);
-
-        // Upsert (Insert or Update)
+        // Upsert selectivo — NO sobreescribe campos de autenticación ni estado
         for (const s of students) {
-            await Student.upsert(s);
+            const existing = await Student.findOne({
+                where: db.sequelize.where(
+                    db.sequelize.fn('LOWER', db.sequelize.col('matricula')),
+                    s.matricula.toLowerCase()
+                )
+            });
+
+            if (existing) {
+                // Solo actualiza campos académicos
+                await existing.update({
+                    name: s.name,
+                    careerName: s.careerName,
+                    grade: s.grade,
+                    group: s.group,
+                    shift: s.shift,
+                    generation: s.generation,
+                    director: s.director
+                    // NO tocar: password, email, isFirstLogin, emailVerified, status, companyId
+                });
+            } else {
+                await Student.create(s);
+            }
         }
 
-        console.log(`✅ ${students.length} estudiantes guardados exitosamente`);
+        fs.unlinkSync(filePath);
+        res.json({ message: `${students.length} alumnos importados correctamente`, count: students.length });
 
-        fs.unlinkSync(path); // Clean up uploaded file
-
-        res.status(200).send({
-            message: "Uploaded the file successfully: " + req.file.originalname,
-            count: students.length
-        });
     } catch (error) {
-        console.error('❌ Error en importStudents:', error);
-        res.status(500).send({
-            message: "Could not upload the file: " + req.file?.originalname,
-            error: error.message
-        });
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        res.status(500).json({ message: 'Error al importar alumnos', error: error.message });
     }
 };
 
+// ─── Importar empresas desde Excel ───────────────────────────────────────────
 exports.importCompanies = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).send({ message: "Please upload an Excel file!" });
-        }
+    if (!req.file) return res.status(400).json({ message: 'Por favor sube un archivo Excel' });
 
-        const path = req.file.path;
-        const workbook = xlsx.readFile(path);
+    const filePath = req.file.path;
+    try {
+        const workbook = xlsx.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
         const companies = [];
-
         rows.forEach((row) => {
             const name = clean(getValue(row, ['Empresa', 'empresa', 'Nombre', 'nombre']));
-
             if (name) {
-                const company = {
-                    name: name,
-                    address: clean(getValue(row, ['Direccion', 'direccion'])),
+                companies.push({
+                    name,
+                    address: clean(getValue(row, ['Direccion', 'Dirección', 'direccion'])),
                     contact: clean(getValue(row, ['Contacto', 'contacto', 'Responsable'])),
-                    businessLine: clean(getValue(row, ['Giro', 'giro']))
-                };
-                companies.push(company);
+                    businessLine: clean(getValue(row, ['Giro', 'giro'])),
+                    email: clean(getValue(row, ['Correo', 'Email', 'correo', 'email'])),
+                    phone: clean(getValue(row, ['Telefono', 'Teléfono', 'telefono'])),
+                    maxStudents: parseInt(getValue(row, ['Cupos', 'cupos', 'MaxAlumnos']) || '5')
+                });
             }
         });
 
-        // Upsert not directly supported easily for auto-increment ID without unique key constraint on name
-        // For simplicity, we just create for now, or check existence.
-        // Assuming unique names for now or just bulk creating.
-        await Company.bulkCreate(companies);
+        await Company.bulkCreate(companies, { ignoreDuplicates: true });
 
-        fs.unlinkSync(path);
-
-        res.status(200).send({
-            message: "Uploaded the file successfully: " + req.file.originalname,
-            count: companies.length
-        });
+        fs.unlinkSync(filePath);
+        res.json({ message: `${companies.length} empresas importadas correctamente`, count: companies.length });
 
     } catch (error) {
-        console.log(error);
-        res.status(500).send({
-            message: "Could not upload the file: " + req.file.originalname,
-            error: error.message
-        });
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        res.status(500).json({ message: 'Error al importar empresas', error: error.message });
     }
 };
 
+// ─── Limpiar tabla alumnos (solo root) ───────────────────────────────────────
 exports.clearStudents = async (req, res) => {
     try {
+        if (req.user.role !== 'ROOT') {
+            return res.status(403).json({ message: 'Solo root puede borrar todos los alumnos' });
+        }
         await Student.destroy({ where: {}, truncate: true });
-        res.send({ message: "All students deleted successfully!" });
+        res.json({ message: 'Tabla de alumnos limpiada correctamente' });
     } catch (err) {
-        res.status(500).send({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
+// ─── Limpiar tabla empresas (solo root) ──────────────────────────────────────
 exports.clearCompanies = async (req, res) => {
     try {
+        if (req.user.role !== 'ROOT') {
+            return res.status(403).json({ message: 'Solo root puede borrar todas las empresas' });
+        }
         await Company.destroy({ where: {}, truncate: true });
-        res.send({ message: "All companies deleted successfully!" });
+        res.json({ message: 'Tabla de empresas limpiada correctamente' });
     } catch (err) {
-        res.status(500).send({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
