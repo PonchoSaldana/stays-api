@@ -24,9 +24,9 @@ const sequelize = new Sequelize(
             // Permite leer fechas como strings (evita problemas con timezone)
             dateStrings: true,
             typeCast: true,
-            ssl: (process.env.DB_SSL === 'true' || !process.env.DB_HOST) ? {
+            ssl: (process.env.DB_SSL === 'true' || (process.env.DB_HOST && !['localhost', '127.0.0.1'].includes(process.env.DB_HOST)) || !process.env.DB_HOST) ? {
                 minVersion: 'TLSv1.2',
-                rejectUnauthorized: true
+                rejectUnauthorized: false // Cambiado a false para mayor compatibilidad con entornos de contenedores (Docker)
             } : null
         }
     }
