@@ -2,12 +2,12 @@ const { Sequelize } = require('sequelize');
 
 // ─── Conexión MySQL ──────────────────────────────────────────────────────────
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'stays_uttecam',
-    process.env.DB_USER || '24zvhwLGFULVSSp.root',
-    process.env.DB_PASS || 'Poncho2005',
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASS,
     {
-        host: process.env.DB_HOST || 'gateway01.us-west-2.prod.aws.tidbcloud.com',
-        port: process.env.DB_PORT || 4000,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || 3306,
         dialect: 'mysql',
         logging: false,                        // Cambiar a console.log para debug SQL
         pool: {
