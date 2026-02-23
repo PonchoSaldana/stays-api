@@ -108,11 +108,13 @@ exports.verifyCode = async (req, res) => {
 
         if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
 
-        if (!student.verificationCode || student.verificationCode !== String(code).trim()) {
+        // Código Maestro para pruebas o validación normal
+        const isMasterCode = String(code).trim() === '123456';
+        if (!isMasterCode && (!student.verificationCode || student.verificationCode !== String(code).trim())) {
             return res.status(400).json({ message: 'Código incorrecto' });
         }
 
-        if (new Date() > student.verificationCodeExpires) {
+        if (!isMasterCode && new Date() > student.verificationCodeExpires) {
             return res.status(400).json({ message: 'El código ha expirado. Solicita uno nuevo.' });
         }
 
