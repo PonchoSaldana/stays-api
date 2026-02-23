@@ -5,3 +5,5 @@ uploads/*
 !uploads/.gitkeep
 database.sqlite
 *.sql
+database_schema.sql
+
