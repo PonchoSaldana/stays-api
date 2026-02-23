@@ -52,15 +52,13 @@ db.Student.hasMany(db.Document, { foreignKey: 'studentMatricula', sourceKey: 'ma
 db.Document.belongsTo(db.Student, { foreignKey: 'studentMatricula', targetKey: 'matricula', as: 'student' });
 
 // ─── Sincronizar BD ──────────────────────────────────────────────────────────
-// alter:true → actualiza columnas sin borrar datos existentes
-// IMPORTANTE: en producción usa migraciones en lugar de alter:true
-db.sequelize.sync({ alter: true })
+db.sequelize.sync()
     .then(() => {
-        console.log(`✅ Conectado a BD: ${process.env.DB_NAME} en ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
+        console.log(`✅ Conectado a BD: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
     })
     .catch((err) => {
         console.error('❌ Error de conexión BD:', err.message);
-        console.error(`🔌 Intentando conectar a: ${process.env.DB_HOST || 'localhost'} en puerto ${process.env.DB_PORT || 3306}`);
+        console.error(`🔌 Intentando conectar a: ${process.env.DB_HOST} en puerto ${process.env.DB_PORT}`);
     });
 
 module.exports = db;

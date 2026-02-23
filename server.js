@@ -4,7 +4,7 @@ require('dotenv').config();
 const REQUIRED_ENV = ['JWT_SECRET', 'DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PORT'];
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
-    console.error(`❌ Variables de entorno faltantes: ${missing.join(', ')}`);
+    console.error(`Variables de entorno faltantes: ${missing.join(', ')}`);
     console.error('   Revisa tu archivo .env antes de iniciar el servidor.');
     process.exit(1);
 }
@@ -33,7 +33,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin.endsWith('.github.io')) {
             return callback(null, true);
         }
-        console.warn(`⚠️ CORS bloqueado para origin no reconocido: ${origin}`);
+        console.warn(` CORS bloqueado para origin no reconocido: ${origin}`);
         callback(new Error(`CORS bloqueado para: ${origin}`));
     },
     credentials: true,
@@ -115,7 +115,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`🌍 CORS permitido para: ${allowedOrigins.join(', ')}`);
-    console.log(`📁 Uploads en: ${path.join(__dirname, 'uploads')}`);
+    console.log(`\n Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`CORS permitido para: ${allowedOrigins.join(', ')}`);
+    console.log(`Uploads en: ${path.join(__dirname, 'uploads')}`);
 });
