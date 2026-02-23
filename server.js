@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 // ─── Validar variables de entorno críticas al arrancar ────────────────────────
-const REQUIRED_ENV = ['JWT_SECRET', 'DB_NAME', 'DB_USER'];
+const REQUIRED_ENV = ['JWT_SECRET', 'DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PORT'];
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
     console.error(`❌ Variables de entorno faltantes: ${missing.join(', ')}`);
