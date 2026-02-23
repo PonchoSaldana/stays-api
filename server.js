@@ -18,19 +18,27 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Render y otros Cloud providers usan proxies, esto permite obtener la IP real del cliente
+app.set('trust proxy', 1);
+
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // En producción, cambia '*' al dominio real del frontend en FRONTEND_URL del .env
 const allowedOrigins = process.env.FRONTEND_URL
-    ? [process.env.FRONTEND_URL]
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    ? [process.env.FRONTEND_URL, 'https://ponchosaldana.github.io'] // Añade dominios comunes si es necesario
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permitir llamadas sin origin (Postman, curl en desarrollo)
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        // Permitir llamadas sin origin (Postman, curl) o si está en la lista blanca
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin.endsWith('.github.io')) {
+            return callback(null, true);
+        }
+        console.warn(`⚠️ CORS bloqueado para origin no reconocido: ${origin}`);
         callback(new Error(`CORS bloqueado para: ${origin}`));
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
