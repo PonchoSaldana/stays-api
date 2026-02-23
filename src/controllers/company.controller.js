@@ -1,11 +1,34 @@
+const { Op } = require('sequelize');
 const db = require('../models');
 const Company = db.Company;
 
 // ─── GET /api/companies ─────────────────────────────────────────────────────
 exports.findAll = async (req, res) => {
     try {
-        const companies = await Company.findAll({ order: [['name', 'ASC']] });
-        res.json(companies);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+        const search = (req.query.search || '').trim();
+        const offset = (page - 1) * limit;
+
+        const where = {};
+        if (search) {
+            where.name = { [Op.like]: `%${search}%` };
+        }
+
+        const { count, rows } = await Company.findAndCountAll({
+            where,
+            order: [['name', 'ASC']],
+            limit,
+            offset
+        });
+
+        res.json({
+            data: rows,
+            total: count,
+            page,
+            totalPages: Math.ceil(count / limit),
+            limit
+        });
     } catch (err) {
         res.status(500).json({ message: err.message || 'Error al obtener empresas' });
     }
