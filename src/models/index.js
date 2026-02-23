@@ -2,11 +2,11 @@ const { Sequelize } = require('sequelize');
 
 // ─── Conexión MySQL ──────────────────────────────────────────────────────────
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'stays_uttecam',   // Nombre de la base de datos
-    process.env.DB_USER || 'root',             // Usuario
-    process.env.DB_PASS || '',                 // Contraseña
+    process.env.DB_NAME || 'stays_uttecam',
+    process.env.DB_USER || 'root',
+    process.env.DB_PASS || '',
     {
-        host: process.env.DB_HOST || 'localhost',
+        host: process.env.DB_HOST || '127.0.0.1', // Forzar IPv4 si no hay host
         port: process.env.DB_PORT || 3306,
         dialect: 'mysql',
         logging: false,                        // Cambiar a console.log para debug SQL
@@ -56,11 +56,11 @@ db.Document.belongsTo(db.Student, { foreignKey: 'studentMatricula', targetKey: '
 // IMPORTANTE: en producción usa migraciones en lugar de alter:true
 db.sequelize.sync({ alter: true })
     .then(() => {
-        console.log('✅ Base de datos MySQL sincronizada correctamente');
+        console.log(`✅ Conectado a BD: ${process.env.DB_NAME} en ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
     })
     .catch((err) => {
-        console.error('❌ Error al sincronizar MySQL:', err.message);
-        console.error('   Verifica que MySQL esté corriendo y las credenciales en .env sean correctas');
+        console.error('❌ Error de conexión BD:', err.message);
+        console.error(`🔌 Intentando conectar a: ${process.env.DB_HOST || 'localhost'} en puerto ${process.env.DB_PORT || 3306}`);
     });
 
 module.exports = db;
