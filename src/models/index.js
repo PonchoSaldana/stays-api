@@ -3,11 +3,11 @@ const { Sequelize } = require('sequelize');
 // ─── Conexión MySQL ──────────────────────────────────────────────────────────
 const sequelize = new Sequelize(
     process.env.DB_NAME || 'stays_uttecam',
-    process.env.DB_USER || 'root',
-    process.env.DB_PASS || '',
+    process.env.DB_USER || '24zvhwLGFULVSSp.root',
+    process.env.DB_PASS || 'Poncho2005',
     {
-        host: process.env.DB_HOST || '127.0.0.1', // Forzar IPv4 si no hay host
-        port: process.env.DB_PORT || 3306,
+        host: process.env.DB_HOST || 'gateway01.us-west-2.prod.aws.tidbcloud.com',
+        port: process.env.DB_PORT || 4000,
         dialect: 'mysql',
         logging: false,                        // Cambiar a console.log para debug SQL
         pool: {
@@ -24,7 +24,7 @@ const sequelize = new Sequelize(
             // Permite leer fechas como strings (evita problemas con timezone)
             dateStrings: true,
             typeCast: true,
-            ssl: process.env.DB_SSL === 'true' ? {
+            ssl: (process.env.DB_SSL === 'true' || !process.env.DB_HOST) ? {
                 minVersion: 'TLSv1.2',
                 rejectUnauthorized: true
             } : null
