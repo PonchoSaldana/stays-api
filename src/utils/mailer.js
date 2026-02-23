@@ -1,17 +1,24 @@
 const nodemailer = require('nodemailer');
 
-const createTransporter = async () => {
+const createTransport = async () => {
+    // Si hay variables de entorno, usamos el transportador real
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        return nodemailer.createTransporter({
-            service: 'gmail',
-            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        return nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.EMAIL_PORT) || 465,
+            secure: process.env.EMAIL_SECURE === 'true' || (process.env.EMAIL_PORT == 465),
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
         });
     }
-    // Desarrollo: Ethereal Mail
+    // Desarrollo: Ethereal Mail (ficticio)
     const testAccount = await nodemailer.createTestAccount();
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
+        secure: false,
         auth: { user: testAccount.user, pass: testAccount.pass }
     });
     console.log('📧 [DEV] Ethereal:', testAccount.user);
@@ -24,7 +31,7 @@ const FROM = process.env.EMAIL_FROM || '"UT Tecamachalco Estadías" <noreply@utt
  * Código OTP de verificación de correo
  */
 const sendVerificationCode = async (toEmail, code, name) => {
-    const transporter = await createTransporter();
+    const transporter = await createTransport();
     const info = await transporter.sendMail({
         from: FROM,
         to: toEmail,
@@ -57,7 +64,7 @@ const sendVerificationCode = async (toEmail, code, name) => {
  * Notificación al alumno cuando el admin aprueba o rechaza un documento
  */
 const sendReviewNotification = async (toEmail, studentName, documentName, status, reviewNote) => {
-    const transporter = await createTransporter();
+    const transporter = await createTransport();
 
     const isApproved = status === 'Aprobado';
     const color = isApproved ? '#059669' : '#DC2626';
