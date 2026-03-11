@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 
+// modelo de empresas con convenio para estadías profesionales
 module.exports = (sequelize) => {
     const Company = sequelize.define('Company', {
         id: {
@@ -7,37 +8,45 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
+        // nombre oficial de la empresa
         name: {
             type: DataTypes.STRING,
             allowNull: false
         },
+        // dirección física de las instalaciones
         address: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            allowNull: true
         },
+        // nombre del contacto en el área de rh o vinculación
         contact: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            allowNull: true
         },
-        businessLine: {   // Giro empresarial
-            type: DataTypes.STRING,
-            defaultValue: ''
-        },
+        // correo del contacto para comunicación
         email: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            allowNull: true
         },
-        phone: {
+        // carrera a la que aplica preferentemente esta empresa
+        careerId: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            allowNull: true
         },
-        available: {      // Si tiene cupo disponible
-            type: DataTypes.BOOLEAN,
-            defaultValue: true
-        },
-        maxStudents: {    // Máximo de estudiantes que acepta
+        // cuántos alumnos puede recibir simultáneamente
+        spots: {
             type: DataTypes.INTEGER,
-            defaultValue: 5
+            defaultValue: 0
+        },
+        // indica si la empresa ofrece apoyo económico al alumno
+        hasFinancialSupport: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
+        // nombre del archivo del convenio firmado (guardado en servidor)
+        fileName: {
+            type: DataTypes.STRING,
+            allowNull: true
         }
     }, {
         tableName: 'Companies',
