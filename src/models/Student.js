@@ -1,11 +1,13 @@
 const { DataTypes } = require('sequelize');
 
+// modelo de alumnos importados desde el excel del sistem escolar
 module.exports = (sequelize) => {
     const Student = sequelize.define('Student', {
-        // ─── Datos del Excel ───────────────────────
+
+        // ─── datos académicos (vienen del excel) ──────────────────────────────
         matricula: {
             type: DataTypes.STRING,
-            primaryKey: true,
+            primaryKey: true,   // la matrícula es el identificador único del alumno
             allowNull: false
         },
         name: {
@@ -18,15 +20,15 @@ module.exports = (sequelize) => {
         },
         grade: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: ''    // grado semestral del alumno
         },
         group: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: ''    // grupo (ej: "A", "B")
         },
         shift: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: ''    // turno: matutino, vespertino, etc.
         },
         generation: {
             type: DataTypes.STRING,
@@ -34,10 +36,10 @@ module.exports = (sequelize) => {
         },
         director: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: ''    // director de carrera asignado
         },
 
-        // ─── Empresa asignada ───────────────────────
+        // ─── empresa donde realizará la estadía ───────────────────────────────
         companyId: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -47,7 +49,7 @@ module.exports = (sequelize) => {
             }
         },
 
-        // ─── Estado del proceso ─────────────────────
+        // ─── estado general del proceso de estadía ────────────────────────────
         status: {
             type: DataTypes.ENUM(
                 'Pendiente',
@@ -62,47 +64,50 @@ module.exports = (sequelize) => {
             ),
             defaultValue: 'Pendiente'
         },
+        // etapa actual dentro del flujo de documentación
         currentStage: {
             type: DataTypes.STRING,
             defaultValue: 'catalogo-empresas'
         },
 
-        // ─── Autenticación / Onboarding ─────────────
+        // ─── autenticación y onboarding ───────────────────────────────────────
         email: {
             type: DataTypes.STRING,
             allowNull: true,
             validate: { isEmail: true }
         },
+        // contraseña hasheada con bcrypt; null hasta que el alumno la configure
         password: {
-            type: DataTypes.STRING,    // Hash bcrypt
+            type: DataTypes.STRING,
             allowNull: true
         },
+        // true = primer ingreso, aún no ha configurado contraseña
         isFirstLogin: {
             type: DataTypes.BOOLEAN,
-            defaultValue: true         // true = aún no ha configurado contraseña
+            defaultValue: true
         },
         emailVerified: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },
 
-        // ─── Código de verificación temporal ────────
+        // ─── código otp temporal para verificar correo ────────────────────────
         verificationCode: {
             type: DataTypes.STRING,
             allowNull: true
         },
         verificationCodeExpires: {
             type: DataTypes.DATE,
-            allowNull: true
+            allowNull: true     // fecha de vencimiento del código (10 minutos)
         },
 
-        // ─── Comentarios del admin ───────────────────
+        // ─── notas internas del administrador ────────────────────────────────
         adminNotes: {
             type: DataTypes.TEXT,
             allowNull: true
         },
 
-        // ─── Seguridad: bloqueo por intentos ────────
+        // ─── bloqueo de cuenta por intentos fallidos ─────────────────────────
         loginAttempts: {
             type: DataTypes.INTEGER,
             defaultValue: 0
@@ -110,11 +115,11 @@ module.exports = (sequelize) => {
         lockUntil: {
             type: DataTypes.DATE,
             allowNull: true,
-            defaultValue: null
+            defaultValue: null  // null = cuenta no bloqueada
         }
     }, {
         tableName: 'Students',
-        timestamps: true   // createdAt, updatedAt
+        timestamps: true    // genera createdAt y updatedAt automáticamente
     });
 
     return Student;

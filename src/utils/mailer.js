@@ -1,16 +1,13 @@
 const { Resend } = require('resend');
 
-/**
- * Inicializa Resend con la API Key del .env
- * Si no hay API Key (entorno local), se usa un dummy o log
- */
+// cliente de resend para envío de correos electrónicos
+// usa la api key del .env; sin ella funciona en modo consola
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// remitente del correo (debe estar verificado en resend para producción)
 const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-/**
- * Código OTP de verificación de correo
- */
+// envía un código otp al correo del alumno para verificar su cuenta
 const sendVerificationCode = async (toEmail, code, name) => {
     try {
         const { data, error } = await resend.emails.send({
@@ -36,25 +33,25 @@ const sendVerificationCode = async (toEmail, code, name) => {
         });
 
         if (error) {
-            // Modo prueba: Si falla (por falta de dominio verificado), mostramos en consola
-            console.log("\n⚠️ [RESEND SANDBOX] No se pudo enviar el correo real.");
-            console.log(`📧 Para: ${toEmail} | 🔑 Código: ${code}\n`);
-            return { message: 'Modo prueba: código mostrado en consola' };
+            // en entorno de prueba sin dominio verificado, mostrar código en consola
+            console.log("\n⚠️ [resend sandbox] no se pudo enviar el correo real.");
+            console.log(`📧 para: ${toEmail} | 🔑 código: ${code}\n`);
+            return { message: 'modo prueba: código mostrado en consola' };
         }
         return data;
     } catch (err) {
-        console.log("\n⚠️ [MODE PRUEBA] Error conexión Resend.");
-        console.log(`📧 Para: ${toEmail} | 🔑 Código: ${code}\n`);
-        return { message: 'Modo prueba: código mostrado en consola' };
+        // si resend no está configurado, mostrar código en consola como fallback
+        console.log("\n⚠️ [modo prueba] error conexión resend.");
+        console.log(`📧 para: ${toEmail} | 🔑 código: ${code}\n`);
+        return { message: 'modo prueba: código mostrado en consola' };
     }
 };
 
-/**
- * Notificación al alumno cuando el admin aprueba o rechaza un documento
- */
+// notifica al alumno cuando el admin aprueba o rechaza un documento
 const sendReviewNotification = async (toEmail, studentName, documentName, status, reviewNote) => {
     try {
         const isApproved = status === 'Aprobado';
+        // colores del correo según el resultado de la revisión
         const color = isApproved ? '#059669' : '#DC2626';
         const bg = isApproved ? '#D1FAE5' : '#FEE2E2';
         const emoji = isApproved ? '✅' : '❌';
@@ -89,12 +86,12 @@ const sendReviewNotification = async (toEmail, studentName, documentName, status
         });
 
         if (error) {
-            console.error('❌ Error Resend notification:', error);
+            console.error('❌ error resend notification:', error);
             throw error;
         }
         return data;
     } catch (err) {
-        console.error('❌ Error sending review notification:', err);
+        console.error('❌ error enviando notificación de revisión:', err);
         throw err;
     }
 };
