@@ -12,7 +12,17 @@ exports.findAll = async (req, res) => {
 
         const where = {};
         if (search) {
-            where.name = { [Op.like]: `%${search}%` };
+            where[Op.or] = [
+                { name: { [Op.like]: `%${search}%` } },
+                { address: { [Op.like]: `%${search}%` } },
+                { contact: { [Op.like]: `%${search}%` } },
+                { careerId: { [Op.like]: `%${search}%` } }
+            ];
+        }
+
+        // Nuevo: Filtrado por carrera si se envía en el query
+        if (req.query.careerId) {
+            where.careerId = { [Op.like]: `%${req.query.careerId}%` };
         }
 
         const { count, rows } = await Company.findAndCountAll({
