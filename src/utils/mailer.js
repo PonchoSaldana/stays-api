@@ -34,14 +34,14 @@ const sendVerificationCode = async (toEmail, code, name) => {
 
         if (error) {
             // en entorno de prueba sin dominio verificado, mostrar código en consola
-            console.log("\n⚠️ [resend sandbox] no se pudo enviar el correo real.");
+            console.log("\n️ [resend sandbox] no se pudo enviar el correo real.");
             console.log(` para: ${toEmail} |  código: ${code}\n`);
             return { message: 'modo prueba: código mostrado en consola' };
         }
         return data;
     } catch (err) {
         // si resend no está configurado, mostrar código en consola como fallback
-        console.log("\n⚠️ [modo prueba] error conexión resend.");
+        console.log("\n️ [modo prueba] error conexión resend.");
         console.log(` para: ${toEmail} |  código: ${code}\n`);
         return { message: 'modo prueba: código mostrado en consola' };
     }
