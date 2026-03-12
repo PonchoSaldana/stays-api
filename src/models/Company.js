@@ -25,7 +25,25 @@ module.exports = (sequelize) => {
             allowNull: true,
             defaultValue: ''
         },
-        // giro empresarial
+        // gerente de recursos humanos (específico para el excel de importación)
+        managerRH: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
+        },
+        // giro empresarial o sector
+        sector: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
+        },
+        // apoyo económico mensual
+        economicSupport: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
+        },
+        // giro empresarial (heredado, se mantendrá sector arriba)
         businessLine: {
             type: DataTypes.STRING,
             allowNull: true,

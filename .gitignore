@@ -6,4 +6,4 @@ uploads/*
 database.sqlite
 *.sql
 database_schema.sql
-
+.env.example
