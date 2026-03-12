@@ -60,11 +60,11 @@ db.Document.belongsTo(db.Student, { foreignKey: 'studentMatricula', targetKey: '
 // sequence: crea las tablas si no existen (sin borrar las existentes)
 db.sequelize.sync()
     .then(() => {
-        console.log(`✅ conectado a bd: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
+        console.log(` conectado a bd: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
     })
     .catch((err) => {
-        console.error('❌ error de conexión bd:', err.message);
-        console.error(`🔌 intentando conectar a: ${process.env.DB_HOST} en puerto ${process.env.DB_PORT}`);
+        console.error(' error de conexión bd:', err.message);
+        console.error(` intentando conectar a: ${process.env.DB_HOST} en puerto ${process.env.DB_PORT}`);
     });
 
 module.exports = db;

@@ -61,7 +61,7 @@ exports.importStudents = async (req, res) => {
         }
 
         fs.unlinkSync(filePath);
-        console.log(`📈 Importación exitosa: ${students.length} alumnos procesados en la base de datos.`);
+        console.log(` Importación exitosa: ${students.length} alumnos procesados en la base de datos.`);
         res.json({ message: `${students.length} alumnos importados correctamente`, count: students.length });
 
     } catch (error) {
@@ -99,7 +99,7 @@ exports.importCompanies = async (req, res) => {
         await Company.bulkCreate(companies, { ignoreDuplicates: true });
 
         fs.unlinkSync(filePath);
-        console.log(`🏢 Catálogo actualizado: ${companies.length} empresas cargadas.`);
+        console.log(` Catálogo actualizado: ${companies.length} empresas cargadas.`);
         res.json({ message: `${companies.length} empresas importadas correctamente`, count: companies.length });
 
     } catch (error) {

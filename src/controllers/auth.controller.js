@@ -47,7 +47,7 @@ exports.checkMatricula = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ checkMatricula:', err);
+        console.error(' checkMatricula:', err);
         res.status(500).json({ message: 'Error del servidor', error: err.message });
     }
 };
@@ -87,7 +87,7 @@ exports.sendCode = async (req, res) => {
         res.json({ message: 'Código enviado a ' + email });
 
     } catch (err) {
-        console.error('❌ sendCode:', err);
+        console.error(' sendCode:', err);
         res.status(500).json({ message: 'Error al enviar el código', error: err.message });
     }
 };
@@ -128,7 +128,7 @@ exports.verifyCode = async (req, res) => {
         res.json({ message: 'Correo verificado correctamente' });
 
     } catch (err) {
-        console.error('❌ verifyCode:', err);
+        console.error(' verifyCode:', err);
         res.status(500).json({ message: 'Error al verificar código', error: err.message });
     }
 };
@@ -180,7 +180,7 @@ exports.setPassword = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ setPassword:', err);
+        console.error(' setPassword:', err);
         res.status(500).json({ message: 'Error al guardar la contraseña', error: err.message });
     }
 };
@@ -257,7 +257,7 @@ exports.loginStudent = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ loginStudent:', err);
+        console.error(' loginStudent:', err);
         res.status(500).json({ message: 'Error en login', error: err.message });
     }
 };
@@ -331,7 +331,7 @@ exports.loginAdmin = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ loginAdmin:', err);
+        console.error(' loginAdmin:', err);
         res.status(500).json({ message: 'Error en login admin', error: err.message });
     }
 };

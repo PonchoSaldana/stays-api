@@ -174,16 +174,4 @@ CREATE TABLE IF NOT EXISTS `admins` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 
--- ============================================================
--- DATOS DE EJEMPLO (opcional — descomenta para probar)
--- ============================================================
 
--- INSERT INTO `companies` (name, address, contact, businessLine, email, phone, available, maxStudents) VALUES
---   ('TECAM Software SA de CV',  'Av. Principal 100, Tecamachalco', 'Ing. García',   'Desarrollo de Software', 'contacto@tecamsw.mx',  '222-100-0001', 1, 3),
---   ('Grupo Industrial Puebla',   'Blvd. Norte 500, Puebla',         'Lic. Martínez', 'Manufactura',            'rrhh@grupopuebla.mx', '222-200-0002', 1, 5),
---   ('Hospital Regional IMSS',    'Calle Salud 200, Tehuacán',       'Dr. López',     'Salud',                  'imss@salud.mx',       '238-300-0003', 1, 2);
-
--- INSERT INTO `students` (matricula, name, careerName, grade, `group`, shift, generation, director) VALUES
---   ('20230001', 'Juan Pérez López',        'Ing. Software',   '9', 'A', 'Matutino',  '2023-2026', 'Dr. Ramírez'),
---   ('20230002', 'María García Hernández',  'Ing. Industrial', '9', 'B', 'Vespertino','2023-2026', 'Dra. Flores'),
---   ('20230003', 'Carlos Soto Díaz',        'Lic. Contaduría', '9', 'A', 'Matutino',  '2023-2026', 'Lic. Torres');

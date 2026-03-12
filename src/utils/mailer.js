@@ -35,14 +35,14 @@ const sendVerificationCode = async (toEmail, code, name) => {
         if (error) {
             // en entorno de prueba sin dominio verificado, mostrar código en consola
             console.log("\n⚠️ [resend sandbox] no se pudo enviar el correo real.");
-            console.log(`📧 para: ${toEmail} | 🔑 código: ${code}\n`);
+            console.log(` para: ${toEmail} |  código: ${code}\n`);
             return { message: 'modo prueba: código mostrado en consola' };
         }
         return data;
     } catch (err) {
         // si resend no está configurado, mostrar código en consola como fallback
         console.log("\n⚠️ [modo prueba] error conexión resend.");
-        console.log(`📧 para: ${toEmail} | 🔑 código: ${code}\n`);
+        console.log(` para: ${toEmail} |  código: ${code}\n`);
         return { message: 'modo prueba: código mostrado en consola' };
     }
 };
@@ -54,7 +54,7 @@ const sendReviewNotification = async (toEmail, studentName, documentName, status
         // colores del correo según el resultado de la revisión
         const color = isApproved ? '#059669' : '#DC2626';
         const bg = isApproved ? '#D1FAE5' : '#FEE2E2';
-        const emoji = isApproved ? '✅' : '❌';
+        const emoji = isApproved ? '' : '';
 
         const { data, error } = await resend.emails.send({
             from: FROM,
@@ -86,12 +86,12 @@ const sendReviewNotification = async (toEmail, studentName, documentName, status
         });
 
         if (error) {
-            console.error('❌ error resend notification:', error);
+            console.error(' error resend notification:', error);
             throw error;
         }
         return data;
     } catch (err) {
-        console.error('❌ error enviando notificación de revisión:', err);
+        console.error(' error enviando notificación de revisión:', err);
         throw err;
     }
 };
