@@ -16,40 +16,47 @@ module.exports = (sequelize) => {
         // dirección física de las instalaciones
         address: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            defaultValue: ''
         },
         // nombre del contacto en el área de rh o vinculación
         contact: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            defaultValue: ''
         },
-        // correo del contacto para comunicación
+        // giro empresarial
+        businessLine: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
+        },
+        // correo de la empresa
         email: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            defaultValue: ''
         },
-        // carrera a la que aplica preferentemente esta empresa
-        careerId: {
+        // teléfono
+        phone: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            defaultValue: ''
         },
-        // cuántos alumnos puede recibir simultáneamente
-        spots: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0
-        },
-        // indica si la empresa ofrece apoyo económico al alumno
-        hasFinancialSupport: {
+        // con cupo disponible
+        available: {
             type: DataTypes.BOOLEAN,
-            defaultValue: false
+            allowNull: false,
+            defaultValue: true
         },
-        // nombre del archivo del convenio firmado (guardado en servidor)
-        fileName: {
-            type: DataTypes.STRING,
-            allowNull: true
+        // capacidad máxima de alumnos
+        maxStudents: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 5
         }
     }, {
-        tableName: 'Companies',
+        tableName: 'companies',
         timestamps: true
     });
 
