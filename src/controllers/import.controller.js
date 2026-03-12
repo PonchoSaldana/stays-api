@@ -97,6 +97,7 @@ exports.importCompanies = async (req, res) => {
             const managerRH = clean(getValue(row, ['Gerente de Recursos Humanos', 'gerente_rh']));
             const sector = clean(getValue(row, ['SECTOR', 'sector', 'Giro']));
             const economicSupport = clean(getValue(row, ['Apoyo Economico Mensual', 'apoyo_mensual', 'pago']));
+            const careerId = clean(getValue(row, ['Carrera', 'Carreras', 'Programa', 'programa']));
 
             if (!rawName) {
                 omittedCount++;
@@ -106,26 +107,28 @@ exports.importCompanies = async (req, res) => {
             // Normalizar nombre para comparación
             const normName = rawName.trim();
 
-            // Verificar si la empresa ya existe (evitar duplicados por nombre)
-            const [company, created] = await Company.findOrCreate({
-                where: { name: normName },
-                defaults: {
-                    address: address,
-                    phone: phone,
-                    contact: contact,
-                    managerRH: managerRH,
-                    sector: sector,
-                    economicSupport: economicSupport,
-                    businessLine: sector, // por compatibilidad con esquema anterior
-                    available: true,
-                    maxStudents: 5
-                }
-            });
+            // Buscar si ya existe la empresa
+            const existing = await Company.findOne({ where: { name: normName } });
 
-            if (created) {
-                insertedCount++;
+            const companyData = {
+                address: address,
+                phone: phone,
+                contact: contact,
+                managerRH: managerRH,
+                sector: sector,
+                economicSupport: economicSupport,
+                careerId: careerId,
+                businessLine: sector,
+                available: true,
+                maxStudents: 5
+            };
+
+            if (existing) {
+                await existing.update(companyData);
+                omittedCount++; // Contamos como omitida de "inserción" pero actualizada
             } else {
-                omittedCount++;
+                await Company.create({ name: normName, ...companyData });
+                insertedCount++;
             }
         }
 

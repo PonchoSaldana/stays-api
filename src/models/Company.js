@@ -72,6 +72,12 @@ module.exports = (sequelize) => {
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 5
+        },
+        // Carrera o carreras solicitadas (ID o texto descriptivo)
+        careerId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
         }
     }, {
         tableName: 'companies',
