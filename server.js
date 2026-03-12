@@ -102,6 +102,7 @@ app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/students', require('./src/routes/students.routes'));
 app.use('/api/companies', require('./src/routes/companies.routes'));
 app.use('/api/import', require('./src/routes/import.routes'));
+app.post('/api/importar-empresas', require('./src/utils/jwt').verifyAdmin, require('./src/middleware/upload').uploadExcel.single('file'), require('./src/controllers/import.controller').importCompanies);
 app.use('/api/documents', require('./src/routes/documents.routes'));
 app.use('/api/config', require('./src/routes/config.routes'));
 

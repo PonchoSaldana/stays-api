@@ -84,33 +84,66 @@ exports.importCompanies = async (req, res) => {
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-        const companies = [];
-        rows.forEach((row) => {
-            const name = clean(getValue(row, ['Empresa', 'Nombre', 'Razon Social', 'Institucion']));
-            
-            const normName = name ? name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-            
-            if (name && !normName.includes('empresa') && !normName.includes('nombre') && !normName.includes('razon social')) {
-                companies.push({
-                    name,
-                    address: clean(getValue(row, ['Direccion', 'Domicilio', 'Ubicacion'])),
-                    contact: clean(getValue(row, ['Contacto', 'Responsable', 'Encargado', 'Tutor'])),
-                    businessLine: clean(getValue(row, ['Giro', 'Actividad', 'Sector'])),
-                    email: clean(getValue(row, ['Correo', 'Email', 'E-mail'])),
-                    phone: clean(getValue(row, ['Telefono', 'Celular', 'Movil', 'Tel'])),
-                    maxStudents: parseInt(clean(getValue(row, ['Cupos', 'MaxAlumnos', 'Max', 'Capacidad'])) || '5') || 5
-                });
+        let insertedCount = 0;
+        let omittedCount = 0;
+        const totalProcessed = rows.length;
+
+        for (const row of rows) {
+            // Mapeo detallado según solicitud del usuario
+            const rawName = clean(getValue(row, ['Empresa', 'nombre_empresa', 'Nombre', 'Razon Social']));
+            const address = clean(getValue(row, ['Dirección', 'direccion', 'Domicilio', 'Ubicación']));
+            const phone = clean(getValue(row, ['Telefono', 'telefono', 'Tel', 'Contacto Telefónico']));
+            const contact = clean(getValue(row, ['Nombre del contacto', 'contacto', 'Responsable']));
+            const managerRH = clean(getValue(row, ['Gerente de Recursos Humanos', 'gerente_rh']));
+            const sector = clean(getValue(row, ['SECTOR', 'sector', 'Giro']));
+            const economicSupport = clean(getValue(row, ['Apoyo Economico Mensual', 'apoyo_mensual', 'pago']));
+
+            if (!rawName) {
+                omittedCount++;
+                continue;
             }
+
+            // Normalizar nombre para comparación
+            const normName = rawName.trim();
+
+            // Verificar si la empresa ya existe (evitar duplicados por nombre)
+            const [company, created] = await Company.findOrCreate({
+                where: { name: normName },
+                defaults: {
+                    address: address,
+                    phone: phone,
+                    contact: contact,
+                    managerRH: managerRH,
+                    sector: sector,
+                    economicSupport: economicSupport,
+                    businessLine: sector, // por compatibilidad con esquema anterior
+                    available: true,
+                    maxStudents: 5
+                }
+            });
+
+            if (created) {
+                insertedCount++;
+            } else {
+                omittedCount++;
+            }
+        }
+
+        // Eliminar archivo temporal
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+        console.log(` Importación de empresas finalizada. Insertadas: ${insertedCount}, Omitidas: ${omittedCount}`);
+
+        res.json({
+            message: 'Proceso de importación completado',
+            empresas_insertadas: insertedCount,
+            empresas_omitidas: omittedCount,
+            total_procesado: totalProcessed
         });
-
-        await Company.bulkCreate(companies, { ignoreDuplicates: true });
-
-        fs.unlinkSync(filePath);
-        console.log(` Catálogo actualizado: ${companies.length} empresas cargadas.`);
-        res.json({ message: `${companies.length} empresas importadas correctamente`, count: companies.length });
 
     } catch (error) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        console.error('Error en importCompanies:', error);
         res.status(500).json({ message: 'Error al importar empresas', error: error.message });
     }
 };
