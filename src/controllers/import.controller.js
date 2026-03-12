@@ -20,16 +20,20 @@ exports.importStudents = async (req, res) => {
             const matricula = clean(getValue(row, ['Matrícula', 'Matricula', 'matricula']));
             const nombre = clean(getValue(row, ['Nombre', 'nombre', 'Nombre Completo']));
 
-            if (matricula && nombre && matricula.toLowerCase() !== 'matrícula') {
+            const normMatricula = matricula ? matricula.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+            const normNombre = nombre ? nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+
+            // Ignorar filas que parezcan encabezados o estén vacías
+            if (matricula && nombre && !normMatricula.includes('matricula') && !normNombre.includes('nombre')) {
                 students.push({
                     matricula,
                     name: nombre,
-                    careerName: clean(getValue(row, ['Carrera', 'carrera', 'Carrera (Nombre)'])),
-                    grade: clean(getValue(row, ['Grado', 'grado', 'Cuatrimestre', 'Semestre'])),
-                    group: clean(getValue(row, ['Grupo', 'grupo', 'Seccion'])),
-                    shift: clean(getValue(row, ['Turno', 'turno'])),
-                    generation: clean(getValue(row, ['Generación', 'Generacion', 'generacion'])),
-                    director: clean(getValue(row, ['NOMBRE DEL DIRECTOR', 'Nombre del Director', 'Director']))
+                    careerName: clean(getValue(row, ['Carrera', 'Programa', 'Especialidad'])),
+                    grade: clean(getValue(row, ['Grado', 'Cuatrimestre', 'Semestre'])),
+                    group: clean(getValue(row, ['Grupo', 'Seccion'])),
+                    shift: clean(getValue(row, ['Turno'])),
+                    generation: clean(getValue(row, ['Generación', 'Generacion'])),
+                    director: clean(getValue(row, ['Director']))
                 });
             }
         });
@@ -82,16 +86,19 @@ exports.importCompanies = async (req, res) => {
 
         const companies = [];
         rows.forEach((row) => {
-            const name = clean(getValue(row, ['Empresa', 'empresa', 'Nombre', 'nombre']));
-            if (name) {
+            const name = clean(getValue(row, ['Empresa', 'Nombre', 'Razon Social', 'Institucion']));
+            
+            const normName = name ? name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+            
+            if (name && !normName.includes('empresa') && !normName.includes('nombre') && !normName.includes('razon social')) {
                 companies.push({
                     name,
-                    address: clean(getValue(row, ['Direccion', 'Dirección', 'direccion'])),
-                    contact: clean(getValue(row, ['Contacto', 'contacto', 'Responsable'])),
-                    businessLine: clean(getValue(row, ['Giro', 'giro'])),
-                    email: clean(getValue(row, ['Correo', 'Email', 'correo', 'email'])),
-                    phone: clean(getValue(row, ['Telefono', 'Teléfono', 'telefono'])),
-                    maxStudents: parseInt(getValue(row, ['Cupos', 'cupos', 'MaxAlumnos']) || '5')
+                    address: clean(getValue(row, ['Direccion', 'Domicilio', 'Ubicacion'])),
+                    contact: clean(getValue(row, ['Contacto', 'Responsable', 'Encargado', 'Tutor'])),
+                    businessLine: clean(getValue(row, ['Giro', 'Actividad', 'Sector'])),
+                    email: clean(getValue(row, ['Correo', 'Email', 'E-mail'])),
+                    phone: clean(getValue(row, ['Telefono', 'Celular', 'Movil', 'Tel'])),
+                    maxStudents: parseInt(clean(getValue(row, ['Cupos', 'MaxAlumnos', 'Max', 'Capacidad'])) || '5') || 5
                 });
             }
         });
