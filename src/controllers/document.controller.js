@@ -112,7 +112,7 @@ exports.reviewDocument = async (req, res) => {
                 );
             } catch (mailErr) {
                 // No fallar la petición si el correo falla
-                console.warn('⚠️ No se pudo enviar notificación de revisión:', mailErr.message);
+                console.warn('️ No se pudo enviar notificación de revisión:', mailErr.message);
             }
         }
 
