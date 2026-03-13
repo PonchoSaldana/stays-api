@@ -84,64 +84,91 @@ exports.importCompanies = async (req, res) => {
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
+        const processedRecords = [];
         let insertedCount = 0;
         let omittedCount = 0;
-        const totalProcessed = rows.length;
 
         for (const row of rows) {
-            // Mapeo detallado según solicitud del usuario
-            const rawName = clean(getValue(row, ['Empresa', 'nombre_empresa', 'Razon Social']));
-            const address = clean(getValue(row, ['Dirección', 'direccion', 'Domicilio', 'Ubicación']));
-            const phone = clean(getValue(row, ['Telefono', 'telefono', 'Tel', 'Contacto Telefónico']));
-            const contact = clean(getValue(row, ['Nombre del contacto', 'contacto', 'Responsable']));
-            const managerRH = clean(getValue(row, ['Gerente de Recursos Humanos', 'gerente_rh']));
-            const sector = clean(getValue(row, ['SECTOR', 'sector', 'Giro']));
-            const economicSupport = clean(getValue(row, ['Apoyo Economico Mensual', 'apoyo_mensual', 'pago']));
-            const careerId = clean(getValue(row, ['Carrera', 'Carreras', 'Programa', 'programa']));
-
-            if (!rawName) {
+            // Extrayendo usando variaciones probables (manejado por getValue)
+            const numero_empresa = clean(getValue(row, ['No. de Empresa', 'numero_empresa', 'No de empresa']));
+            const empresa = clean(getValue(row, ['EMPRESA', 'nombre_empresa', 'Nombre', 'Razon Social']));
+            
+            // Requisito 6: Validar que el campo empresa y numero_empresa existan
+            if (!empresa || !numero_empresa) {
                 omittedCount++;
                 continue;
             }
 
-            // Normalizar nombre para comparación
-            const normName = rawName.trim();
-
-            // Buscar si ya existe la empresa
-            const existing = await Company.findOne({ where: { name: normName } });
-
-            const companyData = {
-                address: address,
-                phone: phone,
-                contact: contact,
-                managerRH: managerRH,
-                sector: sector,
-                economicSupport: economicSupport,
-                careerId: careerId,
-                businessLine: sector,
-                available: true,
-                maxStudents: 5
+            // Mapeo a formato snake_case según lo pedido
+            const record = {
+                numero_empresa: numero_empresa,
+                empresa: empresa,
+                direccion: clean(getValue(row, ['DIRECCIÓN', 'direccion', 'Domicilio'])),
+                estado: clean(getValue(row, ['ESTADO', 'estado'])),
+                telefono: clean(getValue(row, ['TELEFONO', 'telefono', 'Tel'])),
+                nombre_dirigido: clean(getValue(row, ['Nom_Dirigidas las Cartas', 'Dirigidas', 'Nombre dirigido'])),
+                cargo: clean(getValue(row, ['CARGO', 'cargo'])),
+                giro: clean(getValue(row, ['GIRO', 'giro', 'SECTOR'])),
+                correo: clean(getValue(row, ['CORREO', 'correo', 'Email'])),
+                empresa_contactada: clean(getValue(row, ['EMPRESA CONTACTADA', 'contactada'])),
+                apoyo_economico: clean(getValue(row, ['Apoyo Economico/Cantidad', 'apoyo', 'pago'])),
+                nombre_director: clean(getValue(row, ['Nombre del Director', 'director'])),
+                aprendientes_requeridos: clean(getValue(row, ['Numero de Aprendientes REQUERIDOS', 'requeridos'])),
+                aprendientes_asignados: clean(getValue(row, ['Numero de Aprendientes ASIGNADOS', 'asignados'])),
+                hombre_mujer: clean(getValue(row, ['Hombre/Mujer', 'genero'])),
+                nombre_proyecto: clean(getValue(row, ['Nombre del Proyecto', 'proyecto'])),
+                area_colaboracion: clean(getValue(row, ['Área donde Colaborará', 'area', 'colaboracion'])),
+                numero_memo: clean(getValue(row, ['N° DE MEMO', 'memo'])),
+                fecha: clean(getValue(row, ['FECHA', 'fecha'])),
+                gestionada_por: clean(getValue(row, ['GESTIONADA POR', 'gestionada']))
             };
 
+            processedRecords.push(record);
+
+            // Preparando los datos para la base de datos (se incluyen los campos snake_case y los requeridos por el modelo base p/ la app web)
+            const companyData = {
+                ...record,
+                // Mapeo en properties antiguas por retrocompatibilidad de la aplicación
+                name: record.empresa,
+                address: record.direccion || '',
+                phone: record.telefono || '',
+                contact: record.nombre_dirigido || '',
+                managerRH: record.nombre_dirigido || '',
+                sector: record.giro || '',
+                economicSupport: record.apoyo_economico || '',
+                businessLine: record.giro || '',
+                email: record.correo || '',
+                available: true,
+                maxStudents: parseInt(record.aprendientes_requeridos, 10) || 5
+                // Nota: Las carreras ya no se evalúan acá por instrucción expresa de ignorar stats y carreras
+            };
+
+            // Upsert / Inserción
+            const existing = await Company.findOne({ where: { numero_empresa: record.numero_empresa } });
+            
             if (existing) {
                 await existing.update(companyData);
-                omittedCount++; // Contamos como omitida de "inserción" pero actualizada
             } else {
-                await Company.create({ name: normName, ...companyData });
-                insertedCount++;
+                const byName = await Company.findOne({ where: { name: record.empresa } });
+                if (byName) {
+                    await byName.update(companyData);
+                } else {
+                    await Company.create(companyData);
+                    insertedCount++;
+                }
             }
         }
 
-        // Eliminar archivo temporal
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-        console.log(` Importación de empresas finalizada. Insertadas: ${insertedCount}, Omitidas: ${omittedCount}`);
-
+        // Requisito 7: Devolver un arreglo JSON limpio con los registros procesados antes de guardarlos 
+        // (Los devolveremos en la respuesta para que el usuario pueda validarlos directamente)
         res.json({
-            message: 'Proceso de importación completado',
-            empresas_insertadas: insertedCount,
-            empresas_omitidas: omittedCount,
-            total_procesado: totalProcessed
+            message: 'Importación procesada con éxito',
+            empresas_nuevas: insertedCount,
+            empresas_omitidas_o_actualizadas: omittedCount,
+            total_procesado: processedRecords.length,
+            registros_procesados: processedRecords // Devolver el arreglo limpio
         });
 
     } catch (error) {
