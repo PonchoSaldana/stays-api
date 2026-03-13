@@ -93,7 +93,7 @@ exports.sendCode = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────
-// PASO 3 (onboarding) — Verificar el código recibido por correo
+// PASO 3 (onboarding/reset) — Verificar el código recibido por correo
 // ────────────────────────────────────────────────────────────────────────────
 exports.verifyCode = async (req, res) => {
     try {
@@ -134,7 +134,7 @@ exports.verifyCode = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────
-// PASO 4 (onboarding) — Guardar contraseña y completar registro
+// PASO 4 (onboarding/reset) — Guardar contraseña y completar registro
 // ────────────────────────────────────────────────────────────────────────────
 exports.setPassword = async (req, res) => {
     try {
@@ -182,6 +182,47 @@ exports.setPassword = async (req, res) => {
     } catch (err) {
         console.error(' setPassword:', err);
         res.status(500).json({ message: 'Error al guardar la contraseña', error: err.message });
+    }
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// RECUPERACIÓN DE CONTRASEÑA — Envía OTP al correo registrado
+// ────────────────────────────────────────────────────────────────────────────
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { matricula } = req.body;
+        if (!matricula) {
+            return res.status(400).json({ message: 'Matrícula requerida' });
+        }
+
+        const student = await Student.findOne({
+            where: db.sequelize.where(
+                db.sequelize.fn('LOWER', db.sequelize.col('matricula')),
+                String(matricula).trim().toLowerCase()
+            )
+        });
+
+        if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
+        if (!student.email) return res.status(400).json({ message: 'No tienes un correo registrado en el sistema. Contacta al administrador.' });
+
+        // Generar código de 6 dígitos
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+
+        await student.update({
+            verificationCode: code,
+            verificationCodeExpires: expires,
+            emailVerified: false // Fuerza a verificar el nuevo código
+        });
+
+        // Enviar correo
+        await sendVerificationCode(student.email, code, student.name);
+
+        res.json({ message: 'Código enviado a ' + student.email, email: student.email });
+
+    } catch (err) {
+        console.error(' forgotPassword:', err);
+        res.status(500).json({ message: 'Error al solicitar recuperación', error: err.message });
     }
 };
 
