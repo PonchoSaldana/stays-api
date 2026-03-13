@@ -88,59 +88,74 @@ exports.importCompanies = async (req, res) => {
         let insertedCount = 0;
         let omittedCount = 0;
 
+        // Eliminar fila de encabezado si llegara a tener nombre de columnas como valores
         for (const row of rows) {
-            // Extrayendo usando variaciones probables (manejado por getValue)
             const numero_empresa = clean(getValue(row, ['No. de Empresa', 'numero_empresa', 'No de empresa']));
-            const empresa = clean(getValue(row, ['EMPRESA', 'nombre_empresa', 'Nombre', 'Razon Social']));
+            const empresa = clean(getValue(row, ['EMPRESA', 'nombre_empresa', 'Razon Social'])); // No buscar "Nombre" para evitar nombre de alumno
             
-            // Requisito 6: Validar que el campo empresa y numero_empresa existan
-            if (!empresa || !numero_empresa) {
+            // Requisito 6 y Regla 3: Validar que el campo empresa y numero_empresa existan y no estén vacíos.
+            // Regla 2: Ignorar resúmenes asumiendo que un "resumen" no tiene número de empresa o nombre válido.
+            if (!empresa || !numero_empresa || String(empresa).toLowerCase().includes('total') || String(empresa).toLowerCase().includes('asignado')) {
                 omittedCount++;
                 continue;
             }
 
-            // Mapeo a formato snake_case según lo pedido
+            // Regla 4: Validaciones y limpieza
+            let telefono = clean(getValue(row, ['TELEFONO', 'telefono', 'Tel']));
+            // limpiar para guardar solo números o formato de teléfono básico
+            telefono = telefono ? telefono.replace(/[^\d+ ]/g, '').trim() : '';
+
+            let correo = clean(getValue(row, ['CORREO', 'correo', 'Email']));
+            // Validar si es correo correcto, si no lo vaciamos
+            if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                correo = '';
+            }
+
+            // Mapeo estricto según instrucciones:
             const record = {
                 numero_empresa: numero_empresa,
                 empresa: empresa,
                 direccion: clean(getValue(row, ['DIRECCIÓN', 'direccion', 'Domicilio'])),
                 estado: clean(getValue(row, ['ESTADO', 'estado'])),
-                telefono: clean(getValue(row, ['TELEFONO', 'telefono', 'Tel'])),
-                nombre_dirigido: clean(getValue(row, ['Nom_Dirigidas las Cartas', 'Dirigidas', 'Nombre dirigido'])),
+                telefono: telefono,
+                nombre_contacto: clean(getValue(row, ['Nom_Dirigidas las Cartas', 'Dirigidas', 'Nombre dirigido'])),
                 cargo: clean(getValue(row, ['CARGO', 'cargo'])),
-                giro: clean(getValue(row, ['GIRO', 'giro', 'SECTOR'])),
-                correo: clean(getValue(row, ['CORREO', 'correo', 'Email'])),
+                giro_empresa: clean(getValue(row, ['GIRO', 'giro', 'SECTOR'])),
+                correo: correo,
                 empresa_contactada: clean(getValue(row, ['EMPRESA CONTACTADA', 'contactada'])),
                 apoyo_economico: clean(getValue(row, ['Apoyo Economico/Cantidad', 'apoyo', 'pago'])),
-                nombre_director: clean(getValue(row, ['Nombre del Director', 'director'])),
+                director: clean(getValue(row, ['Nombre del Director', 'director'])),
                 aprendientes_requeridos: clean(getValue(row, ['Numero de Aprendientes REQUERIDOS', 'requeridos'])),
                 aprendientes_asignados: clean(getValue(row, ['Numero de Aprendientes ASIGNADOS', 'asignados'])),
-                hombre_mujer: clean(getValue(row, ['Hombre/Mujer', 'genero'])),
+                genero_preferente: clean(getValue(row, ['Hombre/Mujer', 'genero'])),
                 nombre_proyecto: clean(getValue(row, ['Nombre del Proyecto', 'proyecto'])),
                 area_colaboracion: clean(getValue(row, ['Área donde Colaborará', 'area', 'colaboracion'])),
                 numero_memo: clean(getValue(row, ['N° DE MEMO', 'memo'])),
-                fecha: clean(getValue(row, ['FECHA', 'fecha'])),
+                fecha_registro: clean(getValue(row, ['FECHA', 'fecha'])),
                 gestionada_por: clean(getValue(row, ['GESTIONADA POR', 'gestionada']))
             };
 
+            // "vuelve a como reconocia por carreras el archivo": conservamos la detección de carrera silenciosamente 
+            // de las columnas base para que el frontend siga filtrando y dibujando logos aunque no esté en la tabla estricta
+            const carreraExtraida = clean(getValue(row, ['Carrera', 'Carreras', 'Programa', 'Especialidad'])) || record.giro_empresa;
+
             processedRecords.push(record);
 
-            // Preparando los datos para la base de datos (se incluyen los campos snake_case y los requeridos por el modelo base p/ la app web)
+            // Preparando los datos para la DB fusionando los alias que usa la aplicación en Producción (retrocompatibilidad)
             const companyData = {
                 ...record,
-                // Mapeo en properties antiguas por retrocompatibilidad de la aplicación
                 name: record.empresa,
                 address: record.direccion || '',
                 phone: record.telefono || '',
-                contact: record.nombre_dirigido || '',
-                managerRH: record.nombre_dirigido || '',
-                sector: record.giro || '',
+                contact: record.nombre_contacto || '',
+                managerRH: record.director || record.nombre_contacto || '',
+                sector: record.giro_empresa || '',
                 economicSupport: record.apoyo_economico || '',
-                businessLine: record.giro || '',
+                businessLine: record.giro_empresa || '',
                 email: record.correo || '',
                 available: true,
-                maxStudents: parseInt(record.aprendientes_requeridos, 10) || 5
-                // Nota: Las carreras ya no se evalúan acá por instrucción expresa de ignorar stats y carreras
+                maxStudents: parseInt(record.aprendientes_requeridos, 10) || 5,
+                careerId: carreraExtraida // requerido por react
             };
 
             // Upsert / Inserción
