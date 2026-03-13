@@ -90,7 +90,7 @@ exports.importCompanies = async (req, res) => {
 
         for (const row of rows) {
             // Mapeo detallado según solicitud del usuario
-            const rawName = clean(getValue(row, ['Empresa', 'nombre_empresa', 'Nombre', 'Razon Social']));
+            const rawName = clean(getValue(row, ['Empresa', 'nombre_empresa', 'Razon Social']));
             const address = clean(getValue(row, ['Dirección', 'direccion', 'Domicilio', 'Ubicación']));
             const phone = clean(getValue(row, ['Telefono', 'telefono', 'Tel', 'Contacto Telefónico']));
             const contact = clean(getValue(row, ['Nombre del contacto', 'contacto', 'Responsable']));
