@@ -78,7 +78,27 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true,
             defaultValue: ''
-        }
+        },
+        numero_empresa: { type: DataTypes.STRING, allowNull: true },
+        empresa: { type: DataTypes.STRING, allowNull: true },
+        direccion: { type: DataTypes.STRING, allowNull: true },
+        estado: { type: DataTypes.STRING, allowNull: true },
+        telefono: { type: DataTypes.STRING, allowNull: true },
+        nombre_dirigido: { type: DataTypes.STRING, allowNull: true },
+        cargo: { type: DataTypes.STRING, allowNull: true },
+        giro: { type: DataTypes.STRING, allowNull: true },
+        correo: { type: DataTypes.STRING, allowNull: true },
+        empresa_contactada: { type: DataTypes.STRING, allowNull: true },
+        apoyo_economico: { type: DataTypes.STRING, allowNull: true },
+        nombre_director: { type: DataTypes.STRING, allowNull: true },
+        aprendientes_requeridos: { type: DataTypes.STRING, allowNull: true },
+        aprendientes_asignados: { type: DataTypes.STRING, allowNull: true },
+        hombre_mujer: { type: DataTypes.STRING, allowNull: true },
+        nombre_proyecto: { type: DataTypes.STRING, allowNull: true },
+        area_colaboracion: { type: DataTypes.STRING, allowNull: true },
+        numero_memo: { type: DataTypes.STRING, allowNull: true },
+        fecha: { type: DataTypes.STRING, allowNull: true },
+        gestionada_por: { type: DataTypes.STRING, allowNull: true }
     }, {
         tableName: 'companies',
         timestamps: true
