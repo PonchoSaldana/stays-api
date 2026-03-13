@@ -14,8 +14,11 @@ router.post('/send-code', ctrl.sendCode);
 // Paso 3: Verificar el código OTP
 router.post('/verify-code', ctrl.verifyCode);
 
-// Paso 4: Guardar contraseña y completar onboarding
+// Paso 4: Guardar contraseña y completar onboarding / reset
 router.post('/set-password', ctrl.setPassword);
+
+// Recuperación de contraseña (envía código al correo registrado)
+router.post('/forgot-password', ctrl.forgotPassword);
 
 // Login normal (matrícula + contraseña)
 router.post('/login/student', ctrl.loginStudent);
