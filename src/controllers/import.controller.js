@@ -222,3 +222,60 @@ exports.clearCompanies = async (req, res) => {
         res.status(500).json({ message: 'Error al limpiar la tabla de empresas', error: err.message });
     }
 };
+// ─── Descargar todos los documentos en un ZIP ───────────────────────────────
+exports.downloadAllDocumentsZip = async (req, res) => {
+    const archiver = require('archiver');
+    const path = require('path');
+    const fs = require('fs');
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename=Expedientes_Completos.zip');
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+        res.status(500).send({ error: err.message });
+    });
+
+    archive.pipe(res);
+
+    const docsDir = path.join(__dirname, '../../uploads/documentos');
+
+    if (fs.existsSync(docsDir)) {
+        // Agregamos la carpeta "documentos" completa al zip
+        archive.directory(docsDir, 'Expedientes');
+    } else {
+        // Si no existe la carpeta, creamos un zip vacío o con un txt explicativo
+        archive.append('No hay documentos subidos actualmente.', { name: 'leeme.txt' });
+    }
+
+    archive.finalize();
+};
+
+// ─── Limpiar TODOS los documentos (Archivos y BD) ──────────────────────────
+exports.clearAllDocuments = async (req, res) => {
+    const path = require('path');
+    const fs = require('fs');
+    try {
+        if (req.user.role !== 'ROOT') {
+            return res.status(403).json({ message: 'Solo root puede realizar la limpieza masiva' });
+        }
+
+        // 1. Borrar registros de la base de datos
+        await db.Document.destroy({ where: {} });
+
+        // 2. Borrar archivos físicos
+        const docsDir = path.join(__dirname, '../../uploads/documentos');
+        if (fs.existsSync(docsDir)) {
+            fs.rmSync(docsDir, { recursive: true, force: true });
+        }
+
+        // 3. Recrear la carpeta raíz para que no truene multer después
+        fs.mkdirSync(docsDir, { recursive: true });
+
+        res.json({ message: 'Todos los documentos físicos y registros han sido eliminados correctamente' });
+    } catch (err) {
+        console.error('Error al limpiar documentos:', err);
+        res.status(500).json({ message: 'Error al limpiar documentos', error: err.message });
+    }
+};

@@ -11,4 +11,8 @@ router.post('/importar-empresas', verifyAdmin, uploadExcel.single('file'), ctrl.
 router.delete('/students', verifyAdmin, ctrl.clearStudents);
 router.delete('/companies', verifyAdmin, ctrl.clearCompanies);
 
+// Descarga masiva y limpieza de documentos físicos
+router.get('/download-zip', verifyAdmin, ctrl.downloadAllDocumentsZip);
+router.delete('/clear-documents', verifyAdmin, ctrl.clearAllDocuments);
+
 module.exports = router;

@@ -16,14 +16,28 @@ const fs = require('fs');
 
 // ── Storage para documentos de alumnos ──────────────────────────────────────
 const studentStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const { matricula, stage } = req.body;
-        if (!matricula || !stage) {
-            return cb(new Error('Se requiere matricula y stage en el cuerpo de la petición'));
+    destination: async (req, file, cb) => {
+        try {
+            const { matricula, stage } = req.body;
+            if (!matricula || !stage) {
+                return cb(new Error('Se requiere matricula y stage en el cuerpo de la petición'));
+            }
+
+            // Buscar carrera y nombre del alumno
+            const db = require('../models');
+            const student = await db.Student.findByPk(matricula);
+            
+            const careerFolder = (student?.careerName || 'General').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+            const studentNameFolder = (student?.name || matricula).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+
+            // Estructura: /uploads/documentos/{Carrera}/{Nombre_Matricula}/{stage}/
+            const dir = path.join(__dirname, '../../uploads/documentos', careerFolder, studentNameFolder, stage);
+            
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            cb(null, dir);
+        } catch (err) {
+            cb(err);
         }
-        const dir = path.join(__dirname, '../../uploads/students', matricula, stage);
-        fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
     },
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
