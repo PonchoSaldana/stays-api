@@ -65,7 +65,42 @@ const loginLimiter = rateLimit({
 });
 
 app.use(generalLimiter);
-app.use('/api/auth/login', loginLimiter); // solo aplica a /login/student y /login/admin
+
+// Límite estricto para LOGIN (Alumnos y Admins)
+app.use('/api/auth/login', loginLimiter);
+
+// Límite para ENVÍO DE CÓDIGOS / RECUPERACIÓN (Previene spam de correo)
+const mailLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 5, // 5 correos por hora por IP
+    message: { message: 'Has solicitado demasiados códigos. Intenta en una hora.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/auth/send-code', mailLimiter);
+app.use('/api/auth/forgot-password', mailLimiter);
+
+// Límite para BÚSQUEDA / VERIFICACIÓN (Previene escaneo de matrículas)
+const searchLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutos
+    max: 30, // 30 intentos cada 5 min
+    message: { message: 'Demasiadas consultas. Espera un momento.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/auth/check-matricula', searchLimiter);
+app.use('/api/auth/hint', searchLimiter);
+
+// Límite para importaciones (evitar abuso de subida de archivos pesados)
+const importLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 20, // max 20 importaciones por hora
+    message: { message: 'Demasiadas importaciones. Intenta en 1 hora.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/import', importLimiter);
+app.use('/api/importar-empresas', importLimiter);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json());
