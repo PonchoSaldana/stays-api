@@ -38,7 +38,15 @@ exports.findAll = async (req, res) => {
 
         const { count, rows } = await Student.findAndCountAll({
             where,
-            attributes: { exclude: ['password', 'verificationCode', 'verificationCodeExpires'] },
+            attributes: {
+                include: [
+                    [
+                        db.sequelize.literal('(SELECT COUNT(*) FROM Documents WHERE Documents.studentMatricula = Student.matricula)'),
+                        'docsCount'
+                    ]
+                ],
+                exclude: ['password', 'verificationCode', 'verificationCodeExpires']
+            },
             order: [['name', 'ASC']],
             limit,
             offset
