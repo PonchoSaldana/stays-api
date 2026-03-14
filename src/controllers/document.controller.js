@@ -21,7 +21,10 @@ exports.uploadDocument = async (req, res) => {
         const student = await Student.findByPk(matricula);
         if (!student) return res.status(404).json({ message: 'Estudiante no encontrado' });
 
-        const relativePath = path.join('students', matricula, stage, req.file.filename)
+        const careerFolder = (student.careerName || 'General').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+        const studentNameFolder = (student.name || matricula).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+
+        const relativePath = path.join('documentos', careerFolder, studentNameFolder, stage, req.file.filename)
             .replace(/\\/g, '/');
 
         const existing = await Document.findOne({

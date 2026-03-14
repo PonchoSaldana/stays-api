@@ -113,7 +113,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const dirs = [
     path.join(__dirname, 'uploads'),
     path.join(__dirname, 'uploads', 'excel'),
-    path.join(__dirname, 'uploads', 'students')
+    path.join(__dirname, 'uploads', 'documentos')
 ];
 dirs.forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
