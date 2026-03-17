@@ -7,10 +7,7 @@ const { generateStudentToken, generateAdminToken } = require('../utils/jwt');
 const Student = db.Student;
 const Admin = db.Admin;
 
-// ────────────────────────────────────────────────────────────────────────────
-// PASO 1 — El alumno ingresa su matrícula
-// Responde si es primer ingreso o ya tiene cuenta configurada
-// ────────────────────────────────────────────────────────────────────────────
+
 exports.checkMatricula = async (req, res) => {
     try {
         const { matricula } = req.body;
@@ -52,9 +49,6 @@ exports.checkMatricula = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// PASO 2 (onboarding) — Alumno ingresa su correo para recibir código
-// ────────────────────────────────────────────────────────────────────────────
 exports.sendCode = async (req, res) => {
     try {
         const { matricula, email } = req.body;
@@ -92,9 +86,7 @@ exports.sendCode = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// PASO 3 (onboarding/reset) — Verificar el código recibido por correo
-// ────────────────────────────────────────────────────────────────────────────
+
 exports.verifyCode = async (req, res) => {
     try {
         const { matricula, code } = req.body;
@@ -133,9 +125,6 @@ exports.verifyCode = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// PASO 4 (onboarding/reset) — Guardar contraseña y completar registro
-// ────────────────────────────────────────────────────────────────────────────
 exports.setPassword = async (req, res) => {
     try {
         const { matricula, password } = req.body;
@@ -185,9 +174,7 @@ exports.setPassword = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// RECUPERACIÓN DE CONTRASEÑA — Envía OTP al correo registrado
-// ────────────────────────────────────────────────────────────────────────────
+
 exports.forgotPassword = async (req, res) => {
     try {
         const { matricula } = req.body;
@@ -226,9 +213,7 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// LOGIN normal de alumno (ya tiene contraseña configurada)
-// ────────────────────────────────────────────────────────────────────────────
+
 const MAX_LOGIN_ATTEMPTS = 7;
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutos
 
@@ -303,9 +288,6 @@ exports.loginStudent = async (req, res) => {
     }
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// LOGIN de administrador / root
-// ────────────────────────────────────────────────────────────────────────────
 exports.loginAdmin = async (req, res) => {
     try {
         const { username, password } = req.body;
