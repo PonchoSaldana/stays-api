@@ -140,6 +140,8 @@ app.use('/api/import', require('./src/routes/import.routes'));
 app.post('/api/importar-empresas', require('./src/utils/jwt').verifyAdmin, require('./src/middleware/upload').uploadExcel.single('file'), require('./src/controllers/import.controller').importCompanies);
 app.use('/api/documents', require('./src/routes/documents.routes'));
 app.use('/api/config', require('./src/routes/config.routes'));
+app.use('/api/admins', require('./src/routes/admins.routes'));
+app.use('/api/careers', require('./src/routes/careers.routes'));
 
 // ─── Manejo de errores global ─────────────────────────────────────────────────
 app.use((err, req, res, next) => {

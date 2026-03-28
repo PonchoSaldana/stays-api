@@ -45,8 +45,8 @@ const verifyAdmin = (req, res, next) => {
 
     jwt.verify(token, SECRET, (err, decoded) => {
         if (err) return res.status(403).json({ message: 'token inválido o expirado' });
-        // rechazar si no es admin ni root
-        if (decoded.role !== 'ADMIN' && decoded.role !== 'ROOT') {
+        // rechazar si no es admin, root, ni encargado de carrera
+        if (decoded.role !== 'ADMIN' && decoded.role !== 'ROOT' && decoded.role !== 'ENCARGADO_CARRERA') {
             return res.status(403).json({ message: 'acceso solo para administradores' });
         }
         req.user = decoded;

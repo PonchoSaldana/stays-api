@@ -27,9 +27,9 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        // rol: ADMIN puede gestionar datos; ROOT puede además modificar procesos
+        // rol: ADMIN puede gestionar datos; ROOT puede además modificar procesos; ENCARGADO_CARRERA 
         role: {
-            type: DataTypes.ENUM('ADMIN', 'ROOT'),
+            type: DataTypes.ENUM('ADMIN', 'ROOT', 'ENCARGADO_CARRERA'),
             defaultValue: 'ADMIN'
         },
         // permite desactivar un admin sin borrarlo
@@ -47,6 +47,11 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
             defaultValue: null
+        },
+        // carreras asignadas
+        assignedCareers: {
+            type: DataTypes.JSON,
+            defaultValue: []
         }
     }, {
         tableName: 'Admins',

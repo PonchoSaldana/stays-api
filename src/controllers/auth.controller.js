@@ -131,8 +131,14 @@ exports.setPassword = async (req, res) => {
         if (!matricula || !password) {
             return res.status(400).json({ message: 'Matrícula y contraseña son requeridas' });
         }
-        if (password.length < 6) {
-            return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+        const isValid = password.length >= 8 && 
+                        /[A-Z]/.test(password) && 
+                        /[a-z]/.test(password) && 
+                        /[0-9]/.test(password) && 
+                        /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (!isValid) {
+            return res.status(400).json({ message: 'La contraseña no cumple con los requisitos de seguridad' });
         }
 
         const student = await Student.findOne({
@@ -350,7 +356,7 @@ exports.loginAdmin = async (req, res) => {
 
         res.json({
             token,
-            user: { id: admin.id, username: admin.username, role: admin.role }
+            user: { id: admin.id, username: admin.username, role: admin.role, assignedCareers: admin.assignedCareers || [] }
         });
 
     } catch (err) {

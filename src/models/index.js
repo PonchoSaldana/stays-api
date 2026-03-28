@@ -43,6 +43,7 @@ db.Company = require('./Company')(sequelize);
 db.Document = require('./Document')(sequelize);
 db.Admin = require('./Admin')(sequelize);
 db.Config = require('./Config')(sequelize);   // configuraciones globales persistentes
+db.Career = require('./Career')(sequelize);
 
 // ─── asociaciones entre modelos ──────────────────────────────────────────────
 
