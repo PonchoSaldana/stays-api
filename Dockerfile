@@ -1,27 +1,31 @@
-# Usar una imagen base de Node.js ligera
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
+# Copiar archivos de dependencias primero (mejor caché de Docker)
 COPY package*.json ./
 
-# Instalar dependencias de producción
+# Instalar solo dependencias de producción
 RUN npm install --omit=dev
 
-# Copiar el resto del código de la aplicación
+# Copiar el código fuente
 COPY . .
 
-# Asegurar que las carpetas de uploads existan (opcional ya que server.js las crea)
-RUN mkdir -p uploads/excel uploads/students
+# Crear carpeta temporal para Excel de importación
+# (los documentos de alumnos van a S3, no al filesystem)
+RUN mkdir -p uploads/excel logs
 
-# Exponer el puerto que usa la app
+# Exponer puerto
 EXPOSE 3001
 
-# Definir variables de entorno por defecto
+# Variables de entorno base
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Comando para arrancar la aplicación
+# Healthcheck para ECS/EC2 load balancers
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+
+# Arrancar con node directamente (PM2 se usa en EC2, no en Docker)
 CMD ["node", "server.js"]
