@@ -2,7 +2,7 @@ const { Resend } = require('resend');
 
 // cliente de resend para envío de correos electrónicos
 // usa la api key del .env; sin ella funciona en modo consola
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key'); // evita crasheos si no hay key
 
 // remitente del correo (debe estar verificado en resend para producción)
 const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
