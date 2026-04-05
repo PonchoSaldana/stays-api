@@ -1,12 +1,15 @@
-const path = require('path');
-const fs = require('fs');
 const db = require('../models');
+const { s3Client, S3_BUCKET } = require('../middleware/upload');
+const { GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { sendReviewNotification } = require('../utils/mailer');
 
 const Document = db.Document;
 const Student = db.Student;
 
-// ─── Subir un documento ──────────────────────────────────────────────────────
+// ─── Subir un documento ───────────────────────────────────────────────────────
+// req.file.key      = key asignada en S3 por multer-s3
+// req.file.location = URL pública en S3 (no usar; los docs son privados)
 exports.uploadDocument = async (req, res) => {
     try {
         if (!req.file) {
@@ -21,11 +24,8 @@ exports.uploadDocument = async (req, res) => {
         const student = await Student.findByPk(matricula);
         if (!student) return res.status(404).json({ message: 'Estudiante no encontrado' });
 
-        const careerFolder = (student.careerName || 'General').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
-        const studentNameFolder = (student.name || matricula).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
-
-        const relativePath = path.join('documentos', careerFolder, studentNameFolder, stage, req.file.filename)
-            .replace(/\\/g, '/');
+        // La key S3 la asigna multer-s3 automáticamente en req.file.key
+        const s3Key = req.file.key;
 
         const existing = await Document.findOne({
             where: { studentMatricula: matricula, stage, documentName }
@@ -33,13 +33,21 @@ exports.uploadDocument = async (req, res) => {
 
         let doc;
         if (existing) {
-            // Borrar archivo anterior del disco
-            const oldFilePath = path.join(__dirname, '../../uploads', existing.filePath);
-            if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+            // Eliminar el archivo anterior de S3 antes de reemplazarlo
+            if (existing.filePath) {
+                try {
+                    await s3Client.send(new DeleteObjectCommand({
+                        Bucket: S3_BUCKET,
+                        Key: existing.filePath
+                    }));
+                } catch (s3Err) {
+                    console.warn('No se pudo borrar archivo anterior de S3:', s3Err.message);
+                }
+            }
 
             await existing.update({
-                filename: req.file.filename,
-                filePath: relativePath,
+                filename: req.file.originalname,
+                filePath: s3Key,           // guardamos la KEY de S3 (no la URL)
                 mimeType: req.file.mimetype,
                 fileSize: req.file.size,
                 status: 'Pendiente',
@@ -51,8 +59,8 @@ exports.uploadDocument = async (req, res) => {
                 studentMatricula: matricula,
                 stage,
                 documentName,
-                filename: req.file.filename,
-                filePath: relativePath,
+                filename: req.file.originalname,
+                filePath: s3Key,           // guardamos la KEY de S3 (no la URL)
                 mimeType: req.file.mimetype,
                 fileSize: req.file.size
             });
@@ -65,7 +73,7 @@ exports.uploadDocument = async (req, res) => {
     }
 };
 
-// ─── Obtener documentos de un alumno ────────────────────────────────────────
+// ─── Obtener documentos de un alumno ─────────────────────────────────────────
 exports.getByStudent = async (req, res) => {
     try {
         const { matricula } = req.params;
@@ -85,7 +93,7 @@ exports.getByStudent = async (req, res) => {
     }
 };
 
-// ─── El admin revisa un documento (aprueba o rechaza) ───────────────────────
+// ─── El admin revisa un documento (aprueba o rechaza) ─────────────────────────
 exports.reviewDocument = async (req, res) => {
     try {
         const { id } = req.params;
@@ -102,20 +110,15 @@ exports.reviewDocument = async (req, res) => {
 
         await doc.update({ status, reviewNote: reviewNote || null });
 
-        // Notificar al alumno por correo si tiene email registrado
         const student = doc.student;
-        if (student && student.email) {
+        if (student?.email) {
             try {
                 await sendReviewNotification(
-                    student.email,
-                    student.name,
-                    doc.documentName,
-                    status,
-                    reviewNote || null
+                    student.email, student.name,
+                    doc.documentName, status, reviewNote || null
                 );
             } catch (mailErr) {
-                // No fallar la petición si el correo falla
-                console.warn('️ No se pudo enviar notificación de revisión:', mailErr.message);
+                console.warn('No se pudo enviar notificación de revisión:', mailErr.message);
             }
         }
 
@@ -126,21 +129,28 @@ exports.reviewDocument = async (req, res) => {
     }
 };
 
-// ─── Descargar / ver un documento ───────────────────────────────────────────
+// ─── Descargar / ver un documento ────────────────────────────────────────────
+// Genera una URL prefirmada de S3 que expira en 15 minutos.
+// El archivo NO pasa por el servidor; el cliente descarga directo desde S3.
 exports.downloadDocument = async (req, res) => {
     try {
         const { id } = req.params;
         const doc = await Document.findByPk(id);
         if (!doc) return res.status(404).json({ message: 'Documento no encontrado' });
 
-        const fullPath = path.join(__dirname, '../../uploads', doc.filePath);
-        if (!fs.existsSync(fullPath)) {
-            return res.status(404).json({ message: 'Archivo físico no encontrado' });
-        }
+        const command = new GetObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: doc.filePath,                      // key S3 guardada en BD
+            ResponseContentDisposition: `attachment; filename="${doc.filename}"`
+        });
 
-        res.download(fullPath, doc.filename);
+        // URL temporal segura (expira en 15 minutos)
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+
+        // Redirigir al cliente directo a S3
+        res.redirect(signedUrl);
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al descargar documento', error: err.message });
+        res.status(500).json({ message: 'Error al generar link de descarga', error: err.message });
     }
 };

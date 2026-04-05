@@ -1,9 +1,19 @@
 node_modules
 .env
+.env.example
 .DS_Store
+
+# Carpeta de uploads local — en producción los archivos van a S3
+# Solo se mantiene uploads/excel para imports temporales
 uploads/*
-!uploads/.gitkeep
+!uploads/excel/.gitkeep
+
+# Logs de PM2
+logs/
+
+# Archivos de base de datos locales
 database.sqlite
 *.sql
-database_schema.sql
-.env.example
+
+# El .env.example SÍ se sube (no tiene secretos reales)
+# .env.example

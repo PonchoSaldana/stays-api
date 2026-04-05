@@ -45,7 +45,7 @@ app.use(cors({
         callback(new Error(`CORS bloqueado para: ${origin}`));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -114,18 +114,10 @@ app.use('/api/importar-empresas', importLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Archivos estáticos ───────────────────────────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ─── Asegurar carpetas de uploads ─────────────────────────────────────────────
-const dirs = [
-    path.join(__dirname, 'uploads'),
-    path.join(__dirname, 'uploads', 'excel'),
-    path.join(__dirname, 'uploads', 'documentos')
-];
-dirs.forEach(dir => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+// ─── Carpeta temporal para Excel (los Excel de importación se procesan localmente) ──
+// Los documentos de alumnos ya van directo a S3 — esta carpeta solo es para imports.
+const excelTempDir = path.join(__dirname, 'uploads', 'excel');
+if (!fs.existsSync(excelTempDir)) fs.mkdirSync(excelTempDir, { recursive: true });
 
 // ─── Inicializar base de datos ────────────────────────────────────────────────
 require('./src/models');
@@ -133,12 +125,17 @@ require('./src/models');
 // ─── Ruta raíz (health check) ─────────────────────────────────────────────────
 app.get('/', (req, res) => {
     res.json({
-        message: '🎓 API — Sistema de Estadías UT Tecamachalco',
-        version: '2.1',
+        message: 'API — Sistema de Estadias UT Tecamachalco',
+        version: '2.2',
         status: 'ok',
+        env: process.env.NODE_ENV || 'development',
+        storage: process.env.S3_BUCKET_NAME ? `S3 (${process.env.S3_BUCKET_NAME})` : 'local',
         timestamp: new Date().toISOString()
     });
 });
+
+// ─── Health check para load balancers / Amplify ───────────────────────────────
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 
 // ─── Rutas ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./src/routes/auth.routes'));
@@ -155,6 +152,7 @@ app.use('/api/careers', require('./src/routes/careers.routes'));
 app.use((err, req, res, next) => {
     // No exponer detalles de error en producción
     const isProduction = process.env.NODE_ENV === 'production';
+    console.error(`[${new Date().toISOString()}] ERROR ${req.method} ${req.path}:`, err.message);
     res.status(err.status || 500).json({
         message: err.message || 'Error interno del servidor',
         ...(isProduction ? {} : { stack: err.stack })
