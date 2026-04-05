@@ -24,7 +24,12 @@ app.set('trust proxy', 1);
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // En producción, cambia '*' al dominio real del frontend en FRONTEND_URL del .env
 const allowedOrigins = process.env.FRONTEND_URL
-    ? [process.env.FRONTEND_URL, 'https://ponchosaldana.github.io'] // Añade dominios comunes si es necesario
+    ? [    process.env.FRONTEND_URL,
+        'https://ponchosaldana.github.io',
+        'https://www.gestiautecam.com',
+        'https://gestiautecam.com',
+        'https://125t.amplifyapp.com',
+      ]// Añade dominios comunes si es necesario
     : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 app.use(cors({
