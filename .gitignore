@@ -1,5 +1,6 @@
 node_modules
 .env
+.env.example
 .DS_Store
 
 # Carpeta de uploads local — en producción los archivos van a S3

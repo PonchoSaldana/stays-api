@@ -5,7 +5,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key'); // evita crasheos si no hay key
 
 // remitente del correo (debe estar verificado en resend para producción)
-const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+const FROM = process.env.EMAIL_FROM || 'noreply@gestiauttecam.com';
 
 // envía un código otp al correo del alumno para verificar su cuenta
 const sendVerificationCode = async (toEmail, code, name) => {
@@ -33,9 +33,10 @@ const sendVerificationCode = async (toEmail, code, name) => {
         });
 
         if (error) {
-            // en entorno de prueba sin dominio verificado, mostrar código en consola
+            // En producción lanzar error; en desarrollo mostrar código en consola
+            if (process.env.NODE_ENV === 'production') throw new Error(`Resend error: ${error.message}`);
             console.log("\n️ [resend sandbox] no se pudo enviar el correo real.");
-            console.log(` para: ${toEmail} |  código: ${code}\n`);
+            console.log(` → para: ${toEmail} |  código: ${code}\n`);
             return { message: 'modo prueba: código mostrado en consola' };
         }
         return data;
