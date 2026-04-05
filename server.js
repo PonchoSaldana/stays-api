@@ -18,8 +18,8 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Render y otros Cloud providers usan proxies, esto permite obtener la IP real del cliente
-app.set('trust proxy', 1);
+// Render, AWS, Nginx y otros Cloud providers usan proxies. Confiar en todos los proxies de la cadena.
+app.set('trust proxy', true);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // En producción, cambia '*' al dominio real del frontend en FRONTEND_URL del .env
@@ -49,6 +49,11 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// ─── Middleware (Cuerpo de las peticiones) ────────────────────────────────────
+// Debe ir antes del Rate Limiting para que los limiters puedan leer req.body.matricula
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 // Límite general — 200 peticiones por 15 min por IP
 const generalLimiter = rateLimit({
@@ -56,7 +61,8 @@ const generalLimiter = rateLimit({
     max: 200,
     message: { message: 'Demasiadas peticiones. Intenta en 15 minutos.' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
 });
 
 // Límite estricto solo para los endpoints de LOGIN:
@@ -69,7 +75,12 @@ const loginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // los logins exitosos NO consumen cupo
-    skip: (req) => process.env.NODE_ENV !== 'production' // desactivado en dev
+    skip: (req) => process.env.NODE_ENV !== 'production', // desactivado en dev
+    keyGenerator: (req) => {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip';
+        const id = req.body?.matricula || req.body?.username || ip;
+        return `login_${id}`;
+    }
 });
 
 app.use(generalLimiter);
@@ -80,10 +91,14 @@ app.use('/api/auth/login', loginLimiter);
 // Límite para ENVÍO DE CÓDIGOS / RECUPERACIÓN (Previene spam de correo)
 const mailLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hora
-    max: 5, // 5 correos por hora por IP
+    max: 5, // 5 correos por hora por IP o matrícula
     message: { message: 'Has solicitado demasiados códigos. Intenta en una hora.' },
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip';
+        return req.body?.matricula ? `mail_${req.body.matricula.toLowerCase()}` : ip;
+    }
 });
 app.use('/api/auth/send-code', mailLimiter);
 app.use('/api/auth/forgot-password', mailLimiter);
@@ -95,6 +110,7 @@ const searchLimiter = rateLimit({
     message: { message: 'Demasiadas consultas. Espera un momento.' },
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
 });
 app.use('/api/auth/check-matricula', searchLimiter);
 app.use('/api/auth/hint', searchLimiter);
@@ -106,13 +122,12 @@ const importLimiter = rateLimit({
     message: { message: 'Demasiadas importaciones. Intenta en 1 hora.' },
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
 });
 app.use('/api/import', importLimiter);
 app.use('/api/importar-empresas', importLimiter);
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Los body parsers fueron movidos arriba del Rate Limiting
 
 // ─── Carpeta temporal para Excel (los Excel de importación se procesan localmente) ──
 // Los documentos de alumnos ya van directo a S3 — esta carpeta solo es para imports.
