@@ -2,16 +2,15 @@ const db = require('../models');
 const Student = db.Student;
 const Company = db.Company;
 const xlsx = require('xlsx');
-const fs = require('fs');
 const { clean, getValue } = require('../utils/excelHelper');
 
 // ─── Importar alumnos desde Excel ────────────────────────────────────────────
+// El archivo llega como buffer en memoria (multer.memoryStorage), NO como ruta en disco.
 exports.importStudents = async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'Por favor sube un archivo Excel' });
 
-    const filePath = req.file.path;
     try {
-        const workbook = xlsx.readFile(filePath);
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -64,23 +63,22 @@ exports.importStudents = async (req, res) => {
             }
         }
 
-        fs.unlinkSync(filePath);
         console.log(` Importación exitosa: ${students.length} alumnos procesados en la base de datos.`);
         res.json({ message: `${students.length} alumnos importados correctamente`, count: students.length });
 
     } catch (error) {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        console.error('Error en importStudents:', error);
         res.status(500).json({ message: 'Error al importar alumnos', error: error.message });
     }
 };
 
 // ─── Importar empresas desde Excel ───────────────────────────────────────────
+// El archivo llega como buffer en memoria (multer.memoryStorage), NO como ruta en disco.
 exports.importCompanies = async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'Por favor sube un archivo Excel' });
 
-    const filePath = req.file.path;
     try {
-        const workbook = xlsx.readFile(filePath);
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -88,40 +86,33 @@ exports.importCompanies = async (req, res) => {
         let insertedCount = 0;
         let omittedCount = 0;
 
-        // Eliminar fila de encabezado si llegara a tener nombre de columnas como valores
         for (const row of rows) {
             const numero_empresa = clean(getValue(row, ['No. de Empresa', 'numero_empresa', 'No de empresa']));
-            const empresa = clean(getValue(row, ['EMPRESA', 'nombre_empresa', 'Razon Social'])); // No buscar "Nombre" para evitar nombre de alumno
-            
-            // Requisito 6 y Regla 3: Validar que el campo empresa y numero_empresa existan y no estén vacíos.
-            // Regla 2: Ignorar resúmenes asumiendo que un "resumen" no tiene número de empresa o nombre válido.
+            const empresa = clean(getValue(row, ['EMPRESA', 'nombre_empresa', 'Razon Social']));
+
             if (!empresa || !numero_empresa || String(empresa).toLowerCase().includes('total') || String(empresa).toLowerCase().includes('asignado')) {
                 omittedCount++;
                 continue;
             }
 
-            // Regla 4: Validaciones y limpieza
             let telefono = clean(getValue(row, ['TELEFONO', 'telefono', 'Tel']));
-            // limpiar para guardar solo números o formato de teléfono básico
             telefono = telefono ? telefono.replace(/[^\d+ ]/g, '').trim() : '';
 
             let correo = clean(getValue(row, ['CORREO', 'correo', 'Email']));
-            // Validar si es correo correcto, si no lo vaciamos
             if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
                 correo = '';
             }
 
-            // Mapeo estricto según instrucciones:
             const record = {
-                numero_empresa: numero_empresa,
-                empresa: empresa,
+                numero_empresa,
+                empresa,
                 direccion: clean(getValue(row, ['DIRECCIÓN', 'direccion', 'Domicilio'])),
                 estado: clean(getValue(row, ['ESTADO', 'estado'])),
-                telefono: telefono,
+                telefono,
                 nombre_contacto: clean(getValue(row, ['Nom_Dirigidas las Cartas', 'Dirigidas', 'Nombre dirigido'])),
                 cargo: clean(getValue(row, ['CARGO', 'cargo'])),
                 giro_empresa: clean(getValue(row, ['GIRO', 'giro', 'SECTOR'])),
-                correo: correo,
+                correo,
                 empresa_contactada: clean(getValue(row, ['EMPRESA CONTACTADA', 'contactada'])),
                 apoyo_economico: clean(getValue(row, ['Apoyo Economico/Cantidad', 'apoyo', 'pago'])),
                 director: clean(getValue(row, ['Nombre del Director', 'director'])),
@@ -135,13 +126,10 @@ exports.importCompanies = async (req, res) => {
                 gestionada_por: clean(getValue(row, ['GESTIONADA POR', 'gestionada']))
             };
 
-            // "vuelve a como reconocia por carreras el archivo": conservamos la detección de carrera silenciosamente 
-            // de las columnas base para que el frontend siga filtrando y dibujando logos aunque no esté en la tabla estricta
             const carreraExtraida = clean(getValue(row, ['Carrera', 'Carreras', 'Programa', 'Especialidad'])) || record.giro_empresa;
 
             processedRecords.push(record);
 
-            // Preparando los datos para la DB fusionando los alias que usa la aplicación en Producción (retrocompatibilidad)
             const companyData = {
                 ...record,
                 name: record.empresa,
@@ -155,12 +143,10 @@ exports.importCompanies = async (req, res) => {
                 email: record.correo || '',
                 available: true,
                 maxStudents: parseInt(record.aprendientes_requeridos, 10) || 5,
-                careerId: carreraExtraida // requerido por react
+                careerId: carreraExtraida
             };
 
-            // Upsert / Inserción
             const existing = await Company.findOne({ where: { numero_empresa: record.numero_empresa } });
-            
             if (existing) {
                 await existing.update(companyData);
             } else {
@@ -174,20 +160,15 @@ exports.importCompanies = async (req, res) => {
             }
         }
 
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-        // Requisito 7: Devolver un arreglo JSON limpio con los registros procesados antes de guardarlos 
-        // (Los devolveremos en la respuesta para que el usuario pueda validarlos directamente)
         res.json({
             message: 'Importación procesada con éxito',
             empresas_nuevas: insertedCount,
             empresas_omitidas_o_actualizadas: omittedCount,
             total_procesado: processedRecords.length,
-            registros_procesados: processedRecords // Devolver el arreglo limpio
+            registros_procesados: processedRecords
         });
 
     } catch (error) {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         console.error('Error en importCompanies:', error);
         res.status(500).json({ message: 'Error al importar empresas', error: error.message });
     }
@@ -199,7 +180,6 @@ exports.clearStudents = async (req, res) => {
         if (req.user.role !== 'ROOT') {
             return res.status(403).json({ message: 'Solo root puede borrar todos los alumnos' });
         }
-        // Eliminamos usando DELETE FROM para evitar problemas con TRUNCATE y FKs
         await Student.destroy({ where: {}, cascade: true });
         res.json({ message: 'Tabla de alumnos limpiada correctamente' });
     } catch (err) {
@@ -214,7 +194,6 @@ exports.clearCompanies = async (req, res) => {
         if (req.user.role !== 'ROOT') {
             return res.status(403).json({ message: 'Solo root puede borrar todas las empresas' });
         }
-        // Eliminamos usando DELETE FROM
         await Company.destroy({ where: {} });
         res.json({ message: 'Tabla de empresas limpiada correctamente' });
     } catch (err) {
@@ -222,6 +201,7 @@ exports.clearCompanies = async (req, res) => {
         res.status(500).json({ message: 'Error al limpiar la tabla de empresas', error: err.message });
     }
 };
+
 // ─── Descargar todos los documentos en un ZIP ───────────────────────────────
 exports.downloadAllDocumentsZip = async (req, res) => {
     const archiver = require('archiver');
@@ -242,10 +222,8 @@ exports.downloadAllDocumentsZip = async (req, res) => {
     const docsDir = path.join(__dirname, '../../uploads/documentos');
 
     if (fs.existsSync(docsDir)) {
-        // Agregamos la carpeta "documentos" completa al zip
         archive.directory(docsDir, 'Expedientes');
     } else {
-        // Si no existe la carpeta, creamos un zip vacío o con un txt explicativo
         archive.append('No hay documentos subidos actualmente.', { name: 'leeme.txt' });
     }
 
@@ -270,7 +248,7 @@ exports.clearAllDocuments = async (req, res) => {
             fs.rmSync(docsDir, { recursive: true, force: true });
         }
 
-        // 3. Recrear la carpeta raíz para que no truene multer después
+        // 3. Recrear la carpeta raíz
         fs.mkdirSync(docsDir, { recursive: true });
 
         res.json({ message: 'Todos los documentos físicos y registros han sido eliminados correctamente' });

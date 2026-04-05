@@ -77,15 +77,10 @@ const studentS3Storage = multerS3({
     }
 });
 
-// ── Storage para archivos Excel del admin → S3 ────────────────────────────────
-const excelS3Storage = multerS3({
-    s3,
-    bucket: BUCKET,
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    key: (req, file, cb) => {
-        cb(null, `excel/import_${Date.now()}_${file.originalname}`);
-    }
-});
+// ── Storage para archivos Excel del admin → Memory (no se guarda en disco ni S3) ─
+// El Excel solo se usa para parsear su contenido y actualizar la BD.
+// multer.memoryStorage() expone req.file.buffer para que xlsx pueda leerlo directamente.
+const excelMemoryStorage = multer.memoryStorage();
 
 // ── Instancias de multer ──────────────────────────────────────────────────────
 const uploadDocument = multer({
@@ -95,7 +90,7 @@ const uploadDocument = multer({
 });
 
 const uploadExcel = multer({
-    storage: excelS3Storage,
+    storage: excelMemoryStorage,
     fileFilter: excelFilter,
     limits: { fileSize: 20 * 1024 * 1024 }   // 20 MB máximo
 });

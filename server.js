@@ -24,13 +24,19 @@ app.set('trust proxy', 1);
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // En producción, cambia '*' al dominio real del frontend en FRONTEND_URL del .env
 const allowedOrigins = process.env.FRONTEND_URL
-    ? [process.env.FRONTEND_URL, 'https://ponchosaldana.github.io'] // Añade dominios comunes si es necesario
+    ? [
+        process.env.FRONTEND_URL,
+        'https://ponchosaldana.github.io',
+        'https://www.gestiautecam.com',
+        'https://gestiautecam.com',
+        'https://125t.amplifyapp.com',
+    ]
     : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 app.use(cors({
     origin: (origin, callback) => {
         // Permitir llamadas sin origin (Postman, curl) o si está en la lista blanca
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin.endsWith('.github.io') || origin.endsWith('.amplifyapp.com')) {
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin.endsWith('.github.io') || origin.endsWith('.amplifyapp.com') || origin.endsWith('.gestiautecam.com')) {
             return callback(null, true);
         }
         console.warn(` CORS bloqueado para origin no reconocido: ${origin}`);
