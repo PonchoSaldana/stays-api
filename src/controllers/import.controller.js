@@ -257,3 +257,52 @@ exports.clearAllDocuments = async (req, res) => {
         res.status(500).json({ message: 'Error al limpiar documentos', error: err.message });
     }
 };
+
+// ─── Exportar Alumnos y Empresas a Excel ──────────────────────────────────────
+exports.exportStudentsExcel = async (req, res) => {
+    try {
+        if (req.user.role !== 'ROOT' && req.user.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'No autorizado para exportar' });
+        }
+
+        // Recuperar alumnos junto con su empresa
+        const students = await db.Student.findAll({
+            include: [{ model: db.Company, as: 'company' }],
+            order: [['name', 'ASC']]
+        });
+
+        const workbook = xlsx.utils.book_new();
+        const exportData = students.map(s => {
+            const comp = s.company || {};
+            return {
+                'Matrícula': s.matricula || '',
+                'Nombre del Alumno': s.name || '',
+                'Carrera': s.careerName || '',
+                'Grado': s.grade || '',
+                'Grupo': s.group || '',
+                'Correo Alumno': s.email || '',
+                'Estado': s.status || '',
+                'Empresa (Razon Social)': comp.name || 'Sin asignar',
+                'No. de Empresa': comp.numero_empresa || '',
+                'Contacto Empresa': comp.contact || '',
+                'Cargo Contacto': comp.cargo || '',
+                'Correo Empresa': comp.email || '',
+                'Teléfono Empresa': comp.phone || '',
+                'Dirección Empresa': comp.address || '',
+                'Giro/Sector': comp.sector || comp.giro_empresa || ''
+            };
+        });
+
+        const worksheet = xlsx.utils.json_to_sheet(exportData);
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Alumnos_y_Empresas');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Disposition', 'attachment; filename="Listado_Alumnos_Empresas.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    } catch (err) {
+        console.error('Error al generar Excel:', err);
+        res.status(500).json({ message: 'Error al generar el Excel', error: err.message });
+    }
+};

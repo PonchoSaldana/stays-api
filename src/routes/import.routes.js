@@ -15,4 +15,7 @@ router.delete('/companies', verifyAdmin, ctrl.clearCompanies);
 router.get('/download-zip', verifyAdmin, ctrl.downloadAllDocumentsZip);
 router.delete('/clear-documents', verifyAdmin, ctrl.clearAllDocuments);
 
+// Exportar BD a Excel
+router.get('/export/excel', verifyAdmin, ctrl.exportStudentsExcel);
+
 module.exports = router;
