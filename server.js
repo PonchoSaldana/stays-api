@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 // ─── Validar variables de entorno críticas al arrancar ────────────────────────
-const REQUIRED_ENV = ['JWT_SECRET', 'DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PORT'];
+const REQUIRED_ENV = ['JWT_SECRET', 'DB_NAME', 'DB_USER', 'DB_HOST'];
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
     console.error(`Variables de entorno faltantes: ${missing.join(', ')}`);
@@ -61,7 +61,8 @@ const generalLimiter = rateLimit({
     max: 200,
     message: { message: 'Demasiadas peticiones. Intenta en 15 minutos.' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    validate: false
 });
 
 // Límite estricto solo para los endpoints de LOGIN:
@@ -110,7 +111,8 @@ const searchLimiter = rateLimit({
     max: 30, // 30 intentos cada 5 min
     message: { message: 'Demasiadas consultas. Espera un momento.' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    validate: false
 });
 app.use('/api/auth/check-matricula', searchLimiter);
 app.use('/api/auth/hint', searchLimiter);
@@ -121,7 +123,8 @@ const importLimiter = rateLimit({
     max: 20, // max 20 importaciones por hora
     message: { message: 'Demasiadas importaciones. Intenta en 1 hora.' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    validate: false
 });
 app.use('/api/import', importLimiter);
 app.use('/api/importar-empresas', importLimiter);
