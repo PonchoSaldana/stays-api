@@ -61,8 +61,7 @@ const generalLimiter = rateLimit({
     max: 200,
     message: { message: 'Demasiadas peticiones. Intenta en 15 minutos.' },
     standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
+    legacyHeaders: false
 });
 
 // Límite estricto solo para los endpoints de LOGIN:
@@ -76,8 +75,9 @@ const loginLimiter = rateLimit({
     legacyHeaders: false,
     skipSuccessfulRequests: true, // los logins exitosos NO consumen cupo
     skip: (req) => process.env.NODE_ENV !== 'production', // desactivado en dev
+    validate: false,
     keyGenerator: (req) => {
-        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip';
+        const ip = (req.ip || 'unknown-ip').replace(/:/g, '_');
         const id = req.body?.matricula || req.body?.username || ip;
         return `login_${id}`;
     }
@@ -95,9 +95,10 @@ const mailLimiter = rateLimit({
     message: { message: 'Has solicitado demasiados códigos. Intenta en una hora.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
     keyGenerator: (req) => {
-        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip';
-        return req.body?.matricula ? `mail_${req.body.matricula.toLowerCase()}` : ip;
+        const ip = (req.ip || 'unknown-ip').replace(/:/g, '_');
+        return req.body?.matricula ? `mail_${req.body.matricula.toLowerCase()}` : `mail_${ip}`;
     }
 });
 app.use('/api/auth/send-code', mailLimiter);
@@ -109,8 +110,7 @@ const searchLimiter = rateLimit({
     max: 30, // 30 intentos cada 5 min
     message: { message: 'Demasiadas consultas. Espera un momento.' },
     standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
+    legacyHeaders: false
 });
 app.use('/api/auth/check-matricula', searchLimiter);
 app.use('/api/auth/hint', searchLimiter);
@@ -121,8 +121,7 @@ const importLimiter = rateLimit({
     max: 20, // max 20 importaciones por hora
     message: { message: 'Demasiadas importaciones. Intenta en 1 hora.' },
     standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown-ip'
+    legacyHeaders: false
 });
 app.use('/api/import', importLimiter);
 app.use('/api/importar-empresas', importLimiter);
