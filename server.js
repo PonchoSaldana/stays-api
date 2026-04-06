@@ -84,7 +84,7 @@ const loginLimiter = rateLimit({
     }
 });
 
-app.use(generalLimiter);
+// app.use(generalLimiter); // Desactivado globalmente para evitar bloqueos en root/admin - ya hay limiters específicos abajo.
 
 // Límite estricto para LOGIN (Alumnos y Admins)
 app.use('/api/auth/login', loginLimiter);
