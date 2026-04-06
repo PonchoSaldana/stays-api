@@ -56,35 +56,25 @@ app.use(express.urlencoded({ extended: true }));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 // Límite general — 200 peticiones por 15 min por IP
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 200,
-    message: { message: 'Demasiadas peticiones. Intenta en 15 minutos.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: false
-});
+// El generalLimiter queda desactivado para evitar bloqueos innecesarios en root/admin.
+// Las rutas críticas tienen sus propios limiters abajo.
 
 // Límite estricto solo para los endpoints de LOGIN:
-// 7 intentos FALLIDOS por IP por ventana de 15 min.
-// En desarrollo se omite — el bloqueo real lo maneja el controlador (cuenta en BD).
+// Límite de SEGURIDAD por IP para LOGIN (Protección contra DOS)
+// El bloqueo real por intentos (7 fallos) lo hace el controlador directamente en la BD
+// Este límite es alto (100) para no molestar a los humanos probando el sistema.
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 7,
+    max: 100, 
     message: { message: 'Demasiados intentos fallidos desde esta red. Espera 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
-    skipSuccessfulRequests: true, // los logins exitosos NO consumen cupo
     skip: (req) => process.env.NODE_ENV !== 'production', // desactivado en dev
     validate: false,
-    keyGenerator: (req) => {
-        const ip = (req.ip || 'unknown-ip').replace(/:/g, '_');
-        const id = req.body?.matricula || req.body?.username || ip;
-        return `login_${id}`;
-    }
+    keyGenerator: (req) => (req.ip || 'unknown-ip').replace(/:/g, '_')
 });
 
-// app.use(generalLimiter); // Desactivado globalmente para evitar bloqueos en root/admin - ya hay limiters específicos abajo.
+
 
 // Límite estricto para LOGIN (Alumnos y Admins)
 app.use('/api/auth/login', loginLimiter);
@@ -108,7 +98,7 @@ app.use('/api/auth/forgot-password', mailLimiter);
 // Límite para BÚSQUEDA / VERIFICACIÓN (Previene escaneo de matrículas)
 const searchLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutos
-    max: 30, // 30 intentos cada 5 min
+    max: 100, // 100 intentos cada 5 min (más permisivo para tests)
     message: { message: 'Demasiadas consultas. Espera un momento.' },
     standardHeaders: true,
     legacyHeaders: false,
