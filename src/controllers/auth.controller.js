@@ -219,7 +219,7 @@ exports.forgotPassword = async (req, res) => {
 };
 
 
-const MAX_LOGIN_ATTEMPTS = 7;
+const MAX_LOGIN_ATTEMPTS = 15;
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutos
 
 exports.loginStudent = async (req, res) => {

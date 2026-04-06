@@ -62,11 +62,11 @@ app.use(express.urlencoded({ extended: true }));
 // Límite estricto solo para los endpoints de LOGIN:
 // Límite de SEGURIDAD por IP para LOGIN (Protección contra DOS)
 // El bloqueo real por intentos (7 fallos) lo hace el controlador directamente en la BD
-// Este límite es alto (100) para no molestar a los humanos probando el sistema.
+// Se aumenta el límite a 1000 para evitar bloqueos falsos en redes compartidas (universidad).
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100, 
-    message: { message: 'Demasiados intentos fallidos desde esta red. Espera 15 minutos.' },
+    max: 1000, 
+    message: { message: 'Demasiadas peticiones desde esta dirección IP. Intenta de nuevo en 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => process.env.NODE_ENV !== 'production', // desactivado en dev
@@ -82,7 +82,7 @@ app.use('/api/auth/login', loginLimiter);
 // Límite para ENVÍO DE CÓDIGOS / RECUPERACIÓN (Previene spam de correo)
 const mailLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hora
-    max: 5, // 5 correos por hora por IP o matrícula
+    max: 10, // Aumentado de 5 a 10 correos por hora
     message: { message: 'Has solicitado demasiados códigos. Intenta en una hora.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -98,8 +98,8 @@ app.use('/api/auth/forgot-password', mailLimiter);
 // Límite para BÚSQUEDA / VERIFICACIÓN (Previene escaneo de matrículas)
 const searchLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutos
-    max: 100, // 100 intentos cada 5 min (más permisivo para tests)
-    message: { message: 'Demasiadas consultas. Espera un momento.' },
+    max: 200, // Aumentado de 100 a 200 intentos cada 5 min
+    message: { message: 'Demasiadas consultas desde esta red. Espera un momento.' },
     standardHeaders: true,
     legacyHeaders: false,
     validate: false
