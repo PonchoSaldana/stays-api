@@ -20,7 +20,7 @@ const s3 = new S3Client({
     }
 });
 
-const BUCKET = process.env.S3_BUCKET_NAME;
+const BUCKET = process.env.S3_BUCKET_NAME || 'fallback-bucket-name';
 
 // ── Filtros de archivo ────────────────────────────────────────────────────────
 const docFilter = (req, file, cb) => {
