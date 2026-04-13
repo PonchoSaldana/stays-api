@@ -58,7 +58,7 @@ exports.findOne = async (req, res) => {
 // ─── POST /api/companies — crear empresa (admin) ────────────────────────────
 exports.create = async (req, res) => {
     try {
-        const { name, address, contact, businessLine, email, phone, available, maxStudents } = req.body;
+        const { name, address, contact, businessLine, email, phone, available, maxStudents, spots, careerId, hasFinancialSupport } = req.body;
         if (!name) return res.status(400).json({ message: 'El nombre de la empresa es requerido' });
 
         const company = await Company.create({
@@ -69,7 +69,9 @@ exports.create = async (req, res) => {
             email: email || '',
             phone: phone || '',
             available: available !== undefined ? available : true,
-            maxStudents: maxStudents || 5
+            maxStudents: spots !== undefined ? spots : (maxStudents || 5),
+            careerId: careerId || '',
+            economicSupport: hasFinancialSupport ? 'Sí' : 'No'
         });
 
         res.status(201).json({ message: 'Empresa creada correctamente', company });
@@ -84,7 +86,7 @@ exports.update = async (req, res) => {
         const company = await Company.findByPk(req.params.id);
         if (!company) return res.status(404).json({ message: 'Empresa no encontrada' });
 
-        const { name, address, contact, businessLine, email, phone, available, maxStudents } = req.body;
+        const { name, address, contact, businessLine, email, phone, available, maxStudents, spots, careerId, hasFinancialSupport } = req.body;
 
         await company.update({
             name: name ?? company.name,
@@ -94,7 +96,9 @@ exports.update = async (req, res) => {
             email: email ?? company.email,
             phone: phone ?? company.phone,
             available: available !== undefined ? available : company.available,
-            maxStudents: maxStudents ?? company.maxStudents
+            maxStudents: spots !== undefined ? spots : (maxStudents ?? company.maxStudents),
+            careerId: careerId ?? company.careerId,
+            economicSupport: hasFinancialSupport !== undefined ? (hasFinancialSupport ? 'Sí' : 'No') : company.economicSupport
         });
 
         res.json({ message: 'Empresa actualizada correctamente', company });

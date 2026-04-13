@@ -235,20 +235,27 @@ exports.validateCreateCompany = [
     body('email')
         .optional()
         .trim()
-        .isEmail().withMessage('Formato de correo inválido')
-        .normalizeEmail()
-        .isLength({ max: 254 }),
+        .isLength({ max: 254 }), // Relaxed: removed isEmail as UI uses this for phone too
     body('phone')
         .optional()
         .trim()
-        .matches(/^[0-9\s\+\-\(\)]{0,20}$/).withMessage('Teléfono inválido: solo números, espacios y +-()')
-        .isLength({ max: 20 }),
+        .isLength({ max: 50 }),
     body('available')
         .optional()
         .isBoolean().withMessage('available debe ser true o false'),
     body('maxStudents')
         .optional()
-        .isInt({ min: 1, max: 50 }).withMessage('maxStudents debe ser entre 1 y 50'),
+        .isInt({ min: 1, max: 1000 }).withMessage('maxStudents debe ser un número'),
+    body('spots')
+        .optional()
+        .isInt({ min: 0, max: 1000 }).withMessage('spots debe ser un número'),
+    body('careerId')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }),
+    body('hasFinancialSupport')
+        .optional()
+        .isBoolean(),
     handleValidation
 ];
 
@@ -277,19 +284,27 @@ exports.validateUpdateCompany = [
     body('email')
         .optional()
         .trim()
-        .isEmail().withMessage('Formato de correo inválido')
-        .normalizeEmail()
         .isLength({ max: 254 }),
     body('phone')
         .optional()
         .trim()
-        .matches(/^[0-9\s\+\-\(\)]{0,20}$/).withMessage('Teléfono inválido'),
+        .isLength({ max: 50 }),
     body('available')
         .optional()
         .isBoolean().withMessage('available debe ser true o false'),
     body('maxStudents')
         .optional()
-        .isInt({ min: 1, max: 50 }).withMessage('maxStudents debe ser entre 1 y 50'),
+        .isInt({ min: 1, max: 1000 }).withMessage('maxStudents debe ser un número'),
+    body('spots')
+        .optional()
+        .isInt({ min: 0, max: 1000 }).withMessage('spots debe ser un número'),
+    body('careerId')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }),
+    body('hasFinancialSupport')
+        .optional()
+        .isBoolean(),
     handleValidation
 ];
 
