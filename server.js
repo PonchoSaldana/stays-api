@@ -143,7 +143,6 @@ app.get('/', (req, res) => {
 
 // ─── Health check para load balancers / Amplify ───────────────────────────────
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
-
 // ─── Rutas ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/students', require('./src/routes/students.routes'));
