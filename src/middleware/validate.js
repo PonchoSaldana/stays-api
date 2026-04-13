@@ -214,28 +214,23 @@ exports.validateCreateCompany = [
     body('name')
         .trim()
         .notEmpty().withMessage('El nombre de la empresa es requerido')
-        .isLength({ max: 200 }).withMessage('Nombre demasiado largo')
-        .matches(SAFE_TEXT_REGEX).withMessage('El nombre contiene caracteres no permitidos')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Nombre demasiado largo'),
     body('address')
         .optional()
         .trim()
-        .isLength({ max: 300 }).withMessage('Dirección demasiado larga')
-        .escape(),
+        .isLength({ max: 300 }).withMessage('Dirección demasiado larga'),
     body('contact')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Contacto demasiado largo')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Contacto demasiado largo'),
     body('businessLine')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Giro demasiado largo')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Giro demasiado largo'),
     body('email')
         .optional()
         .trim()
-        .isLength({ max: 254 }), // Relaxed: removed isEmail as UI uses this for phone too
+        .isLength({ max: 254 }), // Campo también usado para teléfono en el UI
     body('phone')
         .optional()
         .trim()
@@ -263,24 +258,19 @@ exports.validateUpdateCompany = [
     body('name')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Nombre demasiado largo')
-        .matches(SAFE_TEXT_REGEX).withMessage('El nombre contiene caracteres no permitidos')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Nombre demasiado largo'),
     body('address')
         .optional()
         .trim()
-        .isLength({ max: 300 }).withMessage('Dirección demasiado larga')
-        .escape(),
+        .isLength({ max: 300 }).withMessage('Dirección demasiado larga'),
     body('contact')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Contacto demasiado largo')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Contacto demasiado largo'),
     body('businessLine')
         .optional()
         .trim()
-        .isLength({ max: 200 }).withMessage('Giro demasiado largo')
-        .escape(),
+        .isLength({ max: 200 }).withMessage('Giro demasiado largo'),
     body('email')
         .optional()
         .trim()
