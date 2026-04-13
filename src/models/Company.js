@@ -37,11 +37,11 @@ module.exports = (sequelize) => {
             allowNull: true,
             defaultValue: ''
         },
-        // apoyo económico mensual
+        // apoyo económico mensual — 'Sí' o 'No'
         economicSupport: {
             type: DataTypes.STRING,
             allowNull: true,
-            defaultValue: ''
+            defaultValue: 'No'
         },
         // giro empresarial (heredado, se mantendrá sector arriba)
         businessLine: {
