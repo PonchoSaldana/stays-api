@@ -17,4 +17,7 @@ router.patch('/:id/review', verifyToken, ctrl.reviewDocument);
 // Descargar un documento
 router.get('/:id/download', verifyToken, ctrl.downloadDocument);
 
+// Borrar un documento (propio)
+router.delete('/', verifyToken, ctrl.deleteByStudent);
+
 module.exports = router;

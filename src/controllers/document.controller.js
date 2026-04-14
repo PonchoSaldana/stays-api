@@ -154,3 +154,50 @@ exports.downloadDocument = async (req, res) => {
         res.status(500).json({ message: 'Error al generar link de descarga', error: err.message });
     }
 };
+// ─── El alumno elimina su propio documento (ej. CV) ───────────────────────────
+exports.deleteByStudent = async (req, res) => {
+    try {
+        const { matricula, documentName, stage } = req.query;
+
+        if (!matricula || !documentName || !stage) {
+            return res.status(400).json({ message: 'Faltan parámetros: matricula, documentName, stage' });
+        }
+
+        // Seguridad: El alumno solo puede borrar sus propios archivos
+        // (En un entorno real comparamos req.user.matricula con la matrícula enviada)
+        if (req.user.role !== 'ROOT' && req.user.role !== 'ADMIN') {
+            const tokenMatricula = String(req.user.matricula).toLowerCase();
+            const targetMatricula = String(matricula).toLowerCase();
+            if (tokenMatricula !== targetMatricula) {
+                return res.status(403).json({ message: 'No tienes permiso para borrar este archivo.' });
+            }
+        }
+
+        const doc = await db.Document.findOne({
+            where: { studentMatricula: matricula, documentName, stage }
+        });
+
+        if (!doc) return res.status(404).json({ message: 'Documento no encontrado en la base de datos.' });
+
+        // 1. Borrar de S3
+        if (doc.filePath) {
+            try {
+                await s3Client.send(new DeleteObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: doc.filePath
+                }));
+            } catch (s3Err) {
+                console.warn('Error al borrar de S3:', s3Err.message);
+                // Continuamos para limpiar la BD aunque falle S3 (ej. si el archivo ya no existe)
+            }
+        }
+
+        // 2. Borrar de la BD
+        await doc.destroy();
+
+        res.json({ message: 'Documento eliminado correctamente' });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Error al eliminar documento', error: err.message });
+    }
+};
