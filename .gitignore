@@ -3,10 +3,8 @@ node_modules
 .env.example
 .DS_Store
 
-# Carpeta de uploads local — en producción los archivos van a S3
-# Solo se mantiene uploads/excel para imports temporales
-uploads/*
-!uploads/excel/.gitkeep
+# Carpeta de uploads local (Ignorada ya que se usa S3 en producción)
+uploads/
 
 # Logs de PM2
 logs/

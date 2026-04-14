@@ -3,6 +3,8 @@ const Student = db.Student;
 const Company = db.Company;
 const xlsx = require('xlsx');
 const { clean, getValue } = require('../utils/excelHelper');
+const { s3Client, S3_BUCKET } = require('../middleware/upload');
+const { ListObjectsV2Command, GetObjectCommand, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 
 // ─── Importar alumnos desde Excel ────────────────────────────────────────────
 // El archivo llega como buffer en memoria (multer.memoryStorage), NO como ruta en disco.
@@ -202,38 +204,53 @@ exports.clearCompanies = async (req, res) => {
     }
 };
 
-// ─── Descargar todos los documentos en un ZIP ───────────────────────────────
+// ─── Descargar todos los documentos en un ZIP (S3) ───────────────────────────
 exports.downloadAllDocumentsZip = async (req, res) => {
     const archiver = require('archiver');
-    const path = require('path');
-    const fs = require('fs');
+    
+    try {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=Expedientes_Completos.zip');
 
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename=Expedientes_Completos.zip');
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.on('error', (err) => { throw err; });
+        archive.pipe(res);
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
+        // 1. Listar objetos en S3
+        const listCommand = new ListObjectsV2Command({
+            Bucket: S3_BUCKET,
+            Prefix: 'documentos/'
+        });
 
-    archive.on('error', (err) => {
-        res.status(500).send({ error: err.message });
-    });
+        const listedObjects = await s3Client.send(listCommand);
 
-    archive.pipe(res);
+        if (!listedObjects.Contents || listedObjects.Contents.length === 0) {
+            archive.append('No hay documentos subidos actualmente en S3.', { name: 'leeme.txt' });
+        } else {
+            // 2. Agregar cada archivo al ZIP
+            for (const object of listedObjects.Contents) {
+                const getCommand = new GetObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: object.Key
+                });
+                const response = await s3Client.send(getCommand);
+                // Remover el prefijo folder para que el zip sea más limpio
+                const zipPath = object.Key.replace('documentos/', '');
+                archive.append(response.Body, { name: zipPath });
+            }
+        }
 
-    const docsDir = path.join(__dirname, '../../uploads/documentos');
-
-    if (fs.existsSync(docsDir)) {
-        archive.directory(docsDir, 'Expedientes');
-    } else {
-        archive.append('No hay documentos subidos actualmente.', { name: 'leeme.txt' });
+        await archive.finalize();
+    } catch (err) {
+        console.error('Error al generar ZIP desde S3:', err);
+        if (!res.headersSent) {
+            res.status(500).send({ error: 'Error al generar el archivo ZIP: ' + err.message });
+        }
     }
-
-    archive.finalize();
 };
 
-// ─── Limpiar TODOS los documentos (Archivos y BD) ──────────────────────────
+// ─── Limpiar TODOS los documentos (S3 y BD) ──────────────────────────
 exports.clearAllDocuments = async (req, res) => {
-    const path = require('path');
-    const fs = require('fs');
     try {
         if (req.user.role !== 'ROOT') {
             return res.status(403).json({ message: 'Solo root puede realizar la limpieza masiva' });
@@ -242,18 +259,30 @@ exports.clearAllDocuments = async (req, res) => {
         // 1. Borrar registros de la base de datos
         await db.Document.destroy({ where: {} });
 
-        // 2. Borrar archivos físicos
-        const docsDir = path.join(__dirname, '../../uploads/documentos');
-        if (fs.existsSync(docsDir)) {
-            fs.rmSync(docsDir, { recursive: true, force: true });
+        // 2. Borrar archivos de S3
+        const listCommand = new ListObjectsV2Command({
+            Bucket: S3_BUCKET,
+            Prefix: 'documentos/'
+        });
+
+        const listedObjects = await s3Client.send(listCommand);
+
+        if (listedObjects.Contents && listedObjects.Contents.length > 0) {
+            const deleteParams = {
+                Bucket: S3_BUCKET,
+                Delete: { Objects: [] }
+            };
+
+            listedObjects.Contents.forEach(({ Key }) => {
+                deleteParams.Delete.Objects.push({ Key });
+            });
+
+            await s3Client.send(new DeleteObjectsCommand(deleteParams));
         }
 
-        // 3. Recrear la carpeta raíz
-        fs.mkdirSync(docsDir, { recursive: true });
-
-        res.json({ message: 'Todos los documentos físicos y registros han sido eliminados correctamente' });
+        res.json({ message: 'Todos los registros y archivos en S3 han sido eliminados correctamente' });
     } catch (err) {
-        console.error('Error al limpiar documentos:', err);
+        console.error('Error al limpiar documentos en S3:', err);
         res.status(500).json({ message: 'Error al limpiar documentos', error: err.message });
     }
 };

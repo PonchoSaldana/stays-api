@@ -121,10 +121,8 @@ app.use('/api/importar-empresas', importLimiter);
 
 // Los body parsers fueron movidos arriba del Rate Limiting
 
-// ─── Carpeta temporal para Excel (los Excel de importación se procesan localmente) ──
-// Los documentos de alumnos ya van directo a S3 — esta carpeta solo es para imports.
-const excelTempDir = path.join(__dirname, 'uploads', 'excel');
-if (!fs.existsSync(excelTempDir)) fs.mkdirSync(excelTempDir, { recursive: true });
+// Los documentos de alumnos ya van directo a S3; los Excel de importación se procesan en memoria.
+// No se requiere almacenamiento local persistente en disco.
 
 // ─── Inicializar base de datos ────────────────────────────────────────────────
 require('./src/models');
@@ -168,5 +166,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`\n Servidor corriendo en http://localhost:${PORT}`);
     console.log(`CORS permitido para: ${allowedOrigins.join(', ')}`);
-    console.log(`Uploads en: ${path.join(__dirname, 'uploads')}`);
+    console.log(`Almacenamiento: ${process.env.S3_BUCKET_NAME ? 'AWS S3 ACTIVADO' : 'LOCAL'}`);
 });
