@@ -58,8 +58,8 @@ db.Student.hasMany(db.Document, { foreignKey: 'studentMatricula', sourceKey: 'ma
 db.Document.belongsTo(db.Student, { foreignKey: 'studentMatricula', targetKey: 'matricula', as: 'student' });
 
 // sincroniza los modelos con la base de datos al iniciar el servidor
-// sequence: crea las tablas si no existen (sin borrar las existentes)
-db.sequelize.sync()
+// alter: true  -> agrega columnas nuevas sin borrar las existentes
+db.sequelize.sync({ alter: true })
     .then(() => {
         console.log(` conectado a bd: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
     })
