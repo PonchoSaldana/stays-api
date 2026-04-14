@@ -250,7 +250,7 @@ exports.validateCreateCompany = [
         .isLength({ max: 100 }),
     body('hasFinancialSupport')
         .optional()
-        .isBoolean(),
+        .isBoolean({ strict: false }).withMessage('hasFinancialSupport debe ser true o false'),
     handleValidation
 ];
 
@@ -294,7 +294,7 @@ exports.validateUpdateCompany = [
         .isLength({ max: 100 }),
     body('hasFinancialSupport')
         .optional()
-        .isBoolean(),
+        .isBoolean({ strict: false }).withMessage('hasFinancialSupport debe ser true o false'),
     handleValidation
 ];
 

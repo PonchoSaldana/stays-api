@@ -59,7 +59,11 @@ exports.findOne = async (req, res) => {
 exports.create = async (req, res) => {
     try {
         const { name, address, contact, businessLine, email, phone, available, maxStudents, spots, careerId, hasFinancialSupport } = req.body;
+        console.log('[CREATE COMPANY] body recibido:', JSON.stringify({ name, careerId, hasFinancialSupport, spots }));
         if (!name) return res.status(400).json({ message: 'El nombre de la empresa es requerido' });
+
+        const economicSupportValue = hasFinancialSupport === true || hasFinancialSupport === 'true' ? 'Sí' : 'No';
+        console.log('[CREATE COMPANY] economicSupport calculado:', economicSupportValue, '| careerId:', careerId);
 
         const company = await Company.create({
             name: name.trim(),
@@ -71,7 +75,7 @@ exports.create = async (req, res) => {
             available: available !== undefined ? available : true,
             maxStudents: spots !== undefined ? spots : (maxStudents || 5),
             careerId: careerId || '',
-            economicSupport: hasFinancialSupport ? 'Sí' : 'No'
+            economicSupport: economicSupportValue
         });
 
         res.status(201).json({ message: 'Empresa creada correctamente', company });
@@ -87,6 +91,13 @@ exports.update = async (req, res) => {
         if (!company) return res.status(404).json({ message: 'Empresa no encontrada' });
 
         const { name, address, contact, businessLine, email, phone, available, maxStudents, spots, careerId, hasFinancialSupport } = req.body;
+        console.log('[UPDATE COMPANY] body recibido:', JSON.stringify({ name, careerId, hasFinancialSupport, spots }));
+
+        const economicSupportValue = hasFinancialSupport !== undefined
+            ? (hasFinancialSupport === true || hasFinancialSupport === 'true' ? 'Sí' : 'No')
+            : company.economicSupport;
+
+        console.log('[UPDATE COMPANY] economicSupport calculado:', economicSupportValue, '| careerId a guardar:', careerId ?? company.careerId);
 
         await company.update({
             name: name ?? company.name,
@@ -97,9 +108,13 @@ exports.update = async (req, res) => {
             phone: phone ?? company.phone,
             available: available !== undefined ? available : company.available,
             maxStudents: spots !== undefined ? spots : (maxStudents ?? company.maxStudents),
-            careerId: careerId ?? company.careerId,
-            economicSupport: hasFinancialSupport !== undefined ? (hasFinancialSupport ? 'Sí' : 'No') : company.economicSupport
+            careerId: careerId !== undefined ? careerId : company.careerId,
+            economicSupport: economicSupportValue
         });
+
+        // Recargar desde BD para tener los valores reales
+        await company.reload();
+        console.log('[UPDATE COMPANY] valores en BD tras update:', JSON.stringify({ careerId: company.careerId, economicSupport: company.economicSupport }));
 
         res.json({ message: 'Empresa actualizada correctamente', company });
     } catch (err) {
