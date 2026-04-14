@@ -157,7 +157,7 @@ exports.downloadDocument = async (req, res) => {
 // ─── El alumno elimina su propio documento (ej. CV) ───────────────────────────
 exports.deleteByStudent = async (req, res) => {
     try {
-        const { matricula, documentName, stage } = req.query;
+        const { matricula, documentName, stage } = req.body;
 
         if (!matricula || !documentName || !stage) {
             return res.status(400).json({ message: 'Faltan parámetros: matricula, documentName, stage' });

@@ -18,6 +18,6 @@ router.patch('/:id/review', verifyToken, ctrl.reviewDocument);
 router.get('/:id/download', verifyToken, ctrl.downloadDocument);
 
 // Borrar un documento (propio)
-router.delete('/', verifyToken, ctrl.deleteByStudent);
+router.post('/delete', verifyToken, ctrl.deleteByStudent);
 
 module.exports = router;
