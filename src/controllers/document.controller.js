@@ -141,7 +141,7 @@ exports.downloadDocument = async (req, res) => {
         const command = new GetObjectCommand({
             Bucket: S3_BUCKET,
             Key: doc.filePath,                      // key S3 guardada en BD
-            ResponseContentDisposition: `attachment; filename="${doc.filename}"`
+            ResponseContentDisposition: `inline; filename="${doc.filename}"`
         });
 
         // URL temporal segura (expira en 15 minutos)
