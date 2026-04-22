@@ -4,11 +4,11 @@ const ctrl = require('../controllers/company.controller');
 const { verifyToken, verifyAdmin } = require('../utils/jwt');
 const v = require('../middleware/validate');
 
-// ── Listar empresas (cualquier usuario autenticado puede ver el catálogo) ──────
-router.get('/', verifyToken, v.validateCompanySearch, ctrl.findAll);
+// ── Listar empresas (hacer público para la presentación demo) ──────
+router.get('/', v.validateCompanySearch, ctrl.findAll);
 
 // ── Ver una empresa ────────────────────────────────────────────────────────────
-router.get('/:id', verifyToken, v.validateIdParam, ctrl.findOne);
+router.get('/:id', v.validateIdParam, ctrl.findOne);
 
 // ── Crear empresa (solo admin) ─────────────────────────────────────────────────
 router.post('/', verifyAdmin, v.validateCreateCompany, ctrl.create);
