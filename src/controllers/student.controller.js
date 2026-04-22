@@ -195,3 +195,50 @@ exports.changePassword = async (req, res) => {
         res.status(500).json({ message: 'Error al cambiar contraseña', error: err.message });
     }
 };
+// ─── DELETE /api/students/:matricula — (Solo ROOT) ─────────────────────────────
+exports.deleteStudent = async (req, res) => {
+    try {
+        const inputMatricula = String(req.params.matricula).trim().toLowerCase();
+
+        const student = await Student.findOne({
+            where: db.sequelize.where(
+                db.sequelize.fn('LOWER', db.sequelize.col('matricula')),
+                inputMatricula
+            )
+        });
+
+        if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
+
+        await student.destroy();
+
+        res.json({ message: 'Cuenta del alumno eliminada correctamente' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error al eliminar alumno', error: err.message });
+    }
+};
+
+// ─── PUT /api/students/:matricula/unlink-company — (Admin/ROOT) ─────────────────────────────
+exports.unlinkCompany = async (req, res) => {
+    try {
+        const inputMatricula = String(req.params.matricula).trim().toLowerCase();
+
+        const student = await Student.findOne({
+            where: db.sequelize.where(
+                db.sequelize.fn('LOWER', db.sequelize.col('matricula')),
+                inputMatricula
+            )
+        });
+
+        if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
+
+        await student.update({
+            companyId: null,
+            status: 'Pendiente',
+            currentStage: 'catalogo-empresas'
+        });
+
+        res.json({ message: 'Empresa desvinculada del alumno', status: student.status });
+    } catch (err) {
+        res.status(500).json({ message: 'Error al desvincular empresa', error: err.message });
+    }
+};

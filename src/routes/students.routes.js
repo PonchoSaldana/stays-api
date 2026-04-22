@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/student.controller');
-const { verifyToken, verifyAdmin } = require('../utils/jwt');
+const { verifyToken, verifyAdmin, verifyRoot } = require('../utils/jwt');
 const v = require('../middleware/validate');
 
 // ── Listar todos los alumnos (solo admin) ─────────────────────────────────────
@@ -18,5 +18,11 @@ router.put('/:matricula/advance-stage', verifyToken, v.validateMatriculaParam, v
 
 // ── Cambiar contraseña (alumno autenticado) ───────────────────────────────────
 router.put('/:matricula/change-password', verifyToken, v.validateMatriculaParam, v.validateChangePassword, ctrl.changePassword);
+
+// ── Eliminar cuenta de alumno (solo admin/root) ──────────────────────────────────────
+router.delete('/:matricula', verifyRoot, v.validateMatriculaParam, ctrl.deleteStudent);
+
+// ── Eliminar empresa seleccionada (desvincular) (admin/root) ───────────
+router.put('/:matricula/unlink-company', verifyAdmin, v.validateMatriculaParam, ctrl.unlinkCompany);
 
 module.exports = router;
