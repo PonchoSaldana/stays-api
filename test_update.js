@@ -1,18 +1,36 @@
 require('dotenv').config();
 const db = require('./src/models');
+const bcrypt = require('bcryptjs');
 
-async function testUpdate() {
+async function testDeleteEndpoint() {
     try {
         await db.sequelize.authenticate();
-        console.log('Conectado a la DB AWS TiDB');
+        console.log('✅ Conectado a la BD AWS');
 
-        const student = await db.Student.findOne({ where: { matricula: '99999999' } });
-        if (!student) {
-            console.log('El alumno 99999999 YA NO ESTÁ. Alguien o algo lo borró.');
-            process.exit(1);
-        }
+        // 1. Crear alumno de prueba
+        const existing = await db.Student.findOne({ where: { matricula: '99999999' } });
+        if (existing) await existing.destroy(); // limpiamos si ya existía
 
-        console.log('Alumno antes de actualizar:', student.email);
+        const hashed = await bcrypt.hash('test123', 10);
+        await db.Student.create({
+            matricula: '99999999',
+            name: 'ALUMNO PRUEBA DELETE',
+            careerName: 'DESARROLLO DE SOFTWARE MULTIPLATAFORMA',
+            email: 'prueba.delete@gestiauttecam.com',
+            password: hashed,
+            isFirstLogin: false,
+            emailVerified: true,
+            status: 'Pendiente'
+        });
+        console.log('✅ Alumno de prueba creado con email: prueba.delete@gestiauttecam.com');
+
+        // 2. Simular exactamente lo que hace el endpoint deleteStudent
+        const student = await db.Student.findOne({
+            where: db.sequelize.where(
+                db.sequelize.fn('LOWER', db.sequelize.col('matricula')),
+                '99999999'
+            )
+        });
 
         await student.update({
             email: null,
@@ -22,21 +40,27 @@ async function testUpdate() {
             loginAttempts: 0,
             lockUntil: null
         });
+        console.log('✅ Se ejecutó el "resetear cuenta" (igual que el botón del dashboard)');
 
-        console.log('Actualización realizada mediante Sequelize. Verificando si sigue existiendo...');
-        const studentAfter = await db.Student.findOne({ where: { matricula: '99999999' } });
-        
-        if (studentAfter) {
-            console.log('Exito! El registro SIGUE VIVO en la base de datos.');
-            console.log(studentAfter.toJSON());
+        // 3. Verificar que el registro SIGUE en la BD
+        const afterDelete = await db.Student.findOne({ where: { matricula: '99999999' } });
+
+        if (afterDelete) {
+            console.log('\n✅ PRUEBA EXITOSA — El alumno SIGUE en la base de datos:');
+            console.log(`   Matrícula: ${afterDelete.matricula}`);
+            console.log(`   Nombre: ${afterDelete.name}`);
+            console.log(`   Email: ${afterDelete.email}`);         // null
+            console.log(`   Password: ${afterDelete.password}`);   // null
+            console.log(`   isFirstLogin: ${afterDelete.isFirstLogin}`); // true
         } else {
-            console.log('Error critico: La actualización lo borró (no debería pasar).');
+            console.log('\n❌ ERROR — El alumno fue BORRADO de la BD (esto no debería pasar)');
         }
 
         process.exit(0);
     } catch(err) {
-        console.error(err);
+        console.error('Error:', err.message);
         process.exit(1);
     }
 }
-testUpdate();
+
+testDeleteEndpoint();
