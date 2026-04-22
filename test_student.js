@@ -1,37 +1,33 @@
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
 const db = require('./src/models');
 
-async function insertTestStudent() {
+async function restoreStudent() {
     try {
         await db.sequelize.authenticate();
-        console.log('Conexión con AWS Database exitosa.');
-
-        const hashed = await bcrypt.hash('123456', 10);
         
-        // Verificamos si ya existe para asegurar de que no arroje error
-        const existing = await db.Student.findOne({ where: { matricula: '99999999' } });
+        const existing = await db.Student.findOne({ where: { matricula: '24325027' } });
         if (existing) {
-            await existing.destroy();
+            console.log('El alumno ya existía.');
+            process.exit(0);
         }
 
         const testStudent = await db.Student.create({
-            matricula: '99999999',
-            name: 'ALUMNO DE PRUEBAs',
+            matricula: '24325027',
+            name: 'SALDAÑA CAMACHO ALFONSO', // Usamos el formato que tenía en la tabla original
             careerName: 'DESARROLLO DE SOFTWARE MULTIPLATAFORMA',
             status: 'Pendiente',
-            email: 'prueba@gestiauttecam.com',
-            password: hashed,
-            isFirstLogin: false,
-            emailVerified: true
+            email: null,
+            password: null,
+            isFirstLogin: true,
+            emailVerified: false
         });
 
-        console.log('Alumno de prueba insertado exitosamente:');
+        console.log('Alumno restaurado exitosamente:');
         console.log(testStudent.toJSON());
         process.exit(0);
     } catch(err) {
-        console.error('Error insertando alumno API', err);
+        console.error('Error restaurando', err);
         process.exit(1);
     }
 }
-insertTestStudent();
+restoreStudent();
