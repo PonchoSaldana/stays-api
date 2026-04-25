@@ -11,8 +11,8 @@ router.post('/upload', verifyToken, uploadDocument.single('file'), ctrl.uploadDo
 // GET /api/documents/student/20230001?stage=upload_1
 router.get('/student/:matricula', verifyToken, ctrl.getByStudent);
 
-// Admin: aprobar o rechazar un documento
-router.patch('/:id/review', verifyToken, ctrl.reviewDocument);
+// Admin: aprobar o rechazar un documento — requiere rol ADMIN o ROOT
+router.patch('/:id/review', verifyAdmin, ctrl.reviewDocument);
 
 // Descargar un documento
 router.get('/:id/download', verifyToken, ctrl.downloadDocument);

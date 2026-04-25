@@ -45,7 +45,8 @@ exports.checkMatricula = async (req, res) => {
 
     } catch (err) {
         console.error(' checkMatricula:', err);
-        res.status(500).json({ message: 'Error del servidor', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error del servidor', ...(detail && { error: detail }) });
     }
 };
 
@@ -65,8 +66,8 @@ exports.sendCode = async (req, res) => {
 
         if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
 
-        // Generar código de 6 dígitos
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        // Generar código de 6 dígitos usando fuente criptográficamente segura
+        const code = String(crypto.randomInt(100000, 1000000));
         const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
         await student.update({
@@ -82,7 +83,8 @@ exports.sendCode = async (req, res) => {
 
     } catch (err) {
         console.error(' sendCode:', err);
-        res.status(500).json({ message: 'Error al enviar el código', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al enviar el código', ...(detail && { error: detail }) });
     }
 };
 
@@ -120,7 +122,8 @@ exports.verifyCode = async (req, res) => {
 
     } catch (err) {
         console.error(' verifyCode:', err);
-        res.status(500).json({ message: 'Error al verificar código', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al verificar código', ...(detail && { error: detail }) });
     }
 };
 
@@ -175,7 +178,8 @@ exports.setPassword = async (req, res) => {
 
     } catch (err) {
         console.error(' setPassword:', err);
-        res.status(500).json({ message: 'Error al guardar la contraseña', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al guardar la contraseña', ...(detail && { error: detail }) });
     }
 };
 
@@ -197,8 +201,8 @@ exports.forgotPassword = async (req, res) => {
         if (!student) return res.status(404).json({ message: 'Alumno no encontrado' });
         if (!student.email) return res.status(400).json({ message: 'No tienes un correo registrado en el sistema. Contacta al administrador.' });
 
-        // Generar código de 6 dígitos
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        // Generar código de 6 dígitos usando fuente criptográficamente segura
+        const code = String(crypto.randomInt(100000, 1000000));
         const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
         await student.update({
@@ -214,7 +218,8 @@ exports.forgotPassword = async (req, res) => {
 
     } catch (err) {
         console.error(' forgotPassword:', err);
-        res.status(500).json({ message: 'Error al solicitar recuperación', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al solicitar recuperación', ...(detail && { error: detail }) });
     }
 };
 
@@ -289,7 +294,7 @@ exports.loginStudent = async (req, res) => {
 
     } catch (err) {
         console.error(' loginStudent:', err);
-        res.status(500).json({ message: 'Error en login', error: err.message });
+        res.status(500).json({ message: 'Error en login' });
     }
 };
 
@@ -298,10 +303,10 @@ exports.loginAdmin = async (req, res) => {
         const { username, password } = req.body;
 
         // Verificar credenciales ROOT desde .env (root nunca se bloquea)
-        const rootUser = process.env.ROOT_USERNAME || 'root';
-        const rootPass = process.env.ROOT_PASSWORD || 'uttecam2026';
-
-        if (username === rootUser && password === rootPass) {
+        // Verificar credenciales ROOT desde .env (root nunca se bloquea)
+        const rootUser = process.env.ROOT_USERNAME;
+        const rootPass = process.env.ROOT_PASSWORD;
+        if (rootUser && rootPass && username === rootUser && password === rootPass) {
             const token = generateAdminToken({ id: 0, username: 'root', role: 'ROOT' });
             return res.json({
                 token,
@@ -360,6 +365,6 @@ exports.loginAdmin = async (req, res) => {
 
     } catch (err) {
         console.error(' loginAdmin:', err);
-        res.status(500).json({ message: 'Error en login admin', error: err.message });
+        res.status(500).json({ message: 'Error en login admin' });
     }
 };

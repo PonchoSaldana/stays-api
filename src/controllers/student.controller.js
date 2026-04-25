@@ -56,7 +56,8 @@ exports.findAll = async (req, res) => {
             limit
         });
     } catch (err) {
-        res.status(500).json({ message: err.message || 'Error al obtener alumnos' });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al obtener alumnos', ...(detail && { error: detail }) });
     }
 };
 
@@ -79,7 +80,8 @@ exports.findByMatricula = async (req, res) => {
 
         res.json(student);
     } catch (err) {
-        res.status(500).json({ message: 'Error al buscar alumno', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al buscar alumno', ...(detail && { error: detail }) });
     }
 };
 
@@ -108,18 +110,44 @@ exports.selectCompany = async (req, res) => {
             return res.status(400).json({ message: 'Ya tienes una empresa asignada. Contacta al administrador para reasignación.' });
         }
 
-        const company = await db.Company.findByPk(companyId);
-        if (!company) return res.status(404).json({ message: 'Empresa no encontrada' });
+        // ── Transacción con bloqueo pesimista para evitar race condition ──────────
+        await db.sequelize.transaction(async (t) => {
+            const company = await db.Company.findByPk(companyId, {
+                lock: t.LOCK.UPDATE,
+                transaction: t
+            });
+            if (!company) {
+                const err = new Error('Empresa no encontrada');
+                err.status = 404;
+                throw err;
+            }
 
-        await student.update({
-            companyId,
-            status: 'Empresa Seleccionada',
-            currentStage: 'documentos-iniciales'
+            const studentsAssigned = await db.Student.count({
+                where: { companyId },
+                transaction: t
+            });
+            const maxSpots = company.maxStudents ?? 5;
+            if (studentsAssigned >= maxSpots) {
+                const err = new Error(`Esta empresa ya no tiene vacantes disponibles (${maxSpots}/${maxSpots} ocupadas).`);
+                err.status = 400;
+                throw err;
+            }
+
+            await student.update({
+                companyId,
+                status: 'Empresa Seleccionada',
+                currentStage: 'documentos-iniciales'
+            }, { transaction: t });
         });
 
-        res.json({ message: 'Empresa seleccionada correctamente', companyId, status: student.status });
+        res.json({ message: 'Empresa seleccionada correctamente', companyId, status: 'Empresa Seleccionada' });
     } catch (err) {
-        res.status(500).json({ message: 'Error al seleccionar empresa', error: err.message });
+        const status = err.status || 500;
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(status).json({ 
+            message: err.status ? err.message : 'Error al seleccionar empresa',
+            ...(detail && !err.status && { error: detail })
+        });
     }
 };
 
@@ -145,7 +173,8 @@ exports.advanceStage = async (req, res) => {
         await student.update({ status, currentStage });
         res.json({ message: 'Etapa actualizada', status, currentStage });
     } catch (err) {
-        res.status(500).json({ message: 'Error al avanzar etapa', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al avanzar etapa', ...(detail && { error: detail }) });
     }
 };
 
@@ -183,7 +212,8 @@ exports.changePassword = async (req, res) => {
 
         res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (err) {
-        res.status(500).json({ message: 'Error al cambiar contraseña', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al cambiar contraseña', ...(detail && { error: detail }) });
     }
 };
 
@@ -213,7 +243,8 @@ exports.deleteStudent = async (req, res) => {
 
         res.json({ message: 'El acceso ha sido revocado. El registro del alumno se mantiene.' });
     } catch (err) {
-        res.status(500).json({ message: 'Error al reiniciar cuenta del alumno', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al reiniciar cuenta del alumno', ...(detail && { error: detail }) });
     }
 };
 
@@ -239,6 +270,7 @@ exports.unlinkCompany = async (req, res) => {
 
         res.json({ message: 'Empresa desvinculada del alumno', status: student.status });
     } catch (err) {
-        res.status(500).json({ message: 'Error al desvincular empresa', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al desvincular empresa', ...(detail && { error: detail }) });
     }
 };

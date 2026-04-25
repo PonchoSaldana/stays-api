@@ -59,13 +59,24 @@ db.Document.belongsTo(db.Student, { foreignKey: 'studentMatricula', targetKey: '
 
 // sincroniza los modelos con la base de datos al iniciar el servidor
 // alter: true  -> agrega columnas nuevas sin borrar las existentes
-db.sequelize.sync({ alter: true })
-    .then(() => {
-        console.log(` conectado a bd: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
-    })
-    .catch((err) => {
-        console.error(' error de conexión bd:', err.message);
-        console.error(` intentando conectar a: ${process.env.DB_HOST} en puerto ${process.env.DB_PORT}`);
-    });
+// En producción se desactiva para evitar modificaciones automáticas al esquema
+if (process.env.NODE_ENV !== 'production') {
+    db.sequelize.sync({ alter: true })
+        .then(() => {
+            console.log(` [dev] modelos sincronizados con bd: ${process.env.DB_NAME}`);
+        })
+        .catch((err) => {
+            console.error(' error de sincronización bd:', err.message);
+        });
+} else {
+    // En producción solo verificamos la conexión; el esquema se maneja con migraciones
+    db.sequelize.authenticate()
+        .then(() => {
+            console.log(` conectado a bd: ${process.env.DB_NAME} en ${process.env.DB_HOST}:${process.env.DB_PORT}`);
+        })
+        .catch((err) => {
+            console.error(' error de conexión bd:', err.message);
+        });
+}
 
 module.exports = db;
