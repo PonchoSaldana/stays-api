@@ -115,19 +115,43 @@ exports.selectCompany = async (req, res) => {
             return res.status(400).json({ message: 'Ya tienes una empresa asignada. Contacta al administrador para reasignación.' });
         }
 
-        // Verificar que la empresa existe
-        const company = await db.Company.findByPk(companyId);
-        if (!company) return res.status(404).json({ message: 'Empresa no encontrada' });
+        // ── Transacción con bloqueo pesimista para evitar race condition ──────────
+        // SELECT FOR UPDATE garantiza que ninguna otra transacción concurrente pueda
+        // leer la misma empresa hasta que ésta finalice, eliminando el TOCTOU.
+        await db.sequelize.transaction(async (t) => {
+            const company = await db.Company.findByPk(companyId, {
+                lock: t.LOCK.UPDATE,
+                transaction: t
+            });
+            if (!company) {
+                const err = new Error('Empresa no encontrada');
+                err.status = 404;
+                throw err;
+            }
 
-        await student.update({
-            companyId,
-            status: 'Empresa Seleccionada',
-            currentStage: 'documentos-iniciales'
+            const studentsAssigned = await db.Student.count({
+                where: { companyId },
+                transaction: t
+            });
+            const maxSpots = company.maxStudents ?? 5;
+            if (studentsAssigned >= maxSpots) {
+                const err = new Error(`Esta empresa ya no tiene vacantes disponibles (${maxSpots}/${maxSpots} ocupadas).`);
+                err.status = 400;
+                throw err;
+            }
+
+            await student.update({
+                companyId,
+                status: 'Empresa Seleccionada',
+                currentStage: 'documentos-iniciales'
+            }, { transaction: t });
         });
 
-        res.json({ message: 'Empresa seleccionada correctamente', companyId, status: student.status });
+        res.json({ message: 'Empresa seleccionada correctamente', companyId, status: 'Empresa Seleccionada' });
     } catch (err) {
-        res.status(500).json({ message: 'Error al seleccionar empresa', error: err.message });
+        const status = err.status || 500;
+        const message = err.status ? err.message : 'Error al seleccionar empresa';
+        res.status(status).json({ message });
     }
 };
 

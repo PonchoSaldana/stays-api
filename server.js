@@ -37,8 +37,8 @@ const allowedOrigins = process.env.FRONTEND_URL
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permitir llamadas sin origin (Postman, curl) o si está en la lista blanca
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin.endsWith('.github.io') || origin.endsWith('.amplifyapp.com') || origin.endsWith('.gestiautecam.com') || origin.endsWith('.gestiauttecam.com')) {
+        // Permitir llamadas sin origin (Postman, curl) o si está en la lista blanca exacta
+        if (!origin || allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
         console.warn(` CORS bloqueado para origin no reconocido: ${origin}`);
@@ -65,11 +65,10 @@ app.use(express.urlencoded({ extended: true }));
 // Se aumenta el límite a 1000 para evitar bloqueos falsos en redes compartidas (universidad).
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000, 
+    max: 30,  // 30 intentos por IP en 15 min es más que suficiente para uso legítimo
     message: { message: 'Demasiadas peticiones desde esta dirección IP. Intenta de nuevo en 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV !== 'production', // desactivado en dev
     validate: false,
     keyGenerator: (req) => (req.ip || 'unknown-ip').replace(/:/g, '_')
 });

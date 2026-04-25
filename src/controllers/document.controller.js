@@ -69,7 +69,8 @@ exports.uploadDocument = async (req, res) => {
         res.json({ message: 'Documento subido correctamente', document: doc });
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al subir documento', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al subir documento', ...(detail && { error: detail }) });
     }
 };
 
@@ -78,6 +79,15 @@ exports.getByStudent = async (req, res) => {
     try {
         const { matricula } = req.params;
         const { stage } = req.query;
+
+        // Un alumno solo puede ver sus propios documentos; admin/root puede ver cualquiera
+        if (req.user.role === 'student') {
+            const tokenMatricula = String(req.user.matricula).toLowerCase();
+            const targetMatricula = String(matricula).toLowerCase();
+            if (tokenMatricula !== targetMatricula) {
+                return res.status(403).json({ message: 'No tienes permiso para ver los documentos de otro alumno.' });
+            }
+        }
 
         const where = { studentMatricula: matricula };
         if (stage) where.stage = stage;
@@ -89,7 +99,8 @@ exports.getByStudent = async (req, res) => {
         res.json(docs);
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al obtener documentos', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al obtener documentos', ...(detail && { error: detail }) });
     }
 };
 
@@ -125,7 +136,8 @@ exports.reviewDocument = async (req, res) => {
         res.json({ message: `Documento ${status.toLowerCase()} correctamente`, document: doc });
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al revisar documento', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al revisar documento', ...(detail && { error: detail }) });
     }
 };
 
@@ -151,7 +163,8 @@ exports.downloadDocument = async (req, res) => {
         res.redirect(signedUrl);
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al generar link de descarga', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al generar link de descarga', ...(detail && { error: detail }) });
     }
 };
 // ─── El alumno elimina su propio documento (ej. CV) ───────────────────────────
@@ -198,6 +211,7 @@ exports.deleteByStudent = async (req, res) => {
         res.json({ message: 'Documento eliminado correctamente' });
 
     } catch (err) {
-        res.status(500).json({ message: 'Error al eliminar documento', error: err.message });
+        const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+        res.status(500).json({ message: 'Error al eliminar documento', ...(detail && { error: detail }) });
     }
 };
