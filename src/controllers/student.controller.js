@@ -5,6 +5,31 @@ const Student = db.Student;
 
 // ─── GET /api/students — lista paginada (solo admin) ─────────────────────────
 // Query params: ?page=1&limit=20&search=juan&careerName=Ingeniería
+/**
+ * @swagger
+ * /api/students:
+ *   get:
+ *     summary: Lista todos los alumnos (Paginado)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de alumnos
+ */
 exports.findAll = async (req, res) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -86,6 +111,36 @@ exports.findByMatricula = async (req, res) => {
 };
 
 // ─── PUT /api/students/:matricula/select-company — alumno elige empresa ───────
+/**
+ * @swagger
+ * /api/students/{matricula}/select-company:
+ *   put:
+ *     summary: El alumno selecciona una empresa para su estadía
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: matricula
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [companyId]
+ *             properties:
+ *               companyId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Empresa seleccionada exitosamente
+ *       400:
+ *         description: Sin vacantes o ya tiene empresa
+ */
 exports.selectCompany = async (req, res) => {
     try {
         const inputMatricula = String(req.params.matricula).trim().toLowerCase();

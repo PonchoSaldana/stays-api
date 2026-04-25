@@ -3,8 +3,12 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 [![Sequelize](https://img.shields.io/badge/ORM-Sequelize-blue)](https://sequelize.org/)
 [![Security](https://img.shields.io/badge/Security-Hardened-orange)](#seguridad)
+[![Swagger](https://img.shields.io/badge/Docs-Swagger-blue)](/api-docs)
 
 API REST robusta diseñada para la gestión integral del proceso de estadías profesionales. Facilita la vinculación entre alumnos, empresas y la universidad, automatizando el flujo de documentos y la asignación de plazas.
+
+> [!TIP]
+> Puedes acceder a la documentación interactiva en: `/api-docs`
 
 ---
 

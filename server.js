@@ -126,12 +126,17 @@ app.use('/api/importar-empresas', importLimiter);
 // ─── Inicializar base de datos ────────────────────────────────────────────────
 require('./src/models');
 
+// ─── Swagger Documentation ──────────────────────────────────────────────────
+const { swaggerUi, swaggerSpecs } = require('./src/config/swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 // ─── Ruta raíz (health check) ─────────────────────────────────────────────────
 app.get('/', (req, res) => {
     res.json({
         message: 'API — Sistema de Estadias UT Tecamachalco',
-        version: '2.2',
+        version: '2.5',
         status: 'ok',
+        docs: '/api-docs',
         env: process.env.NODE_ENV || 'development',
         storage: process.env.S3_BUCKET_NAME ? `S3 (${process.env.S3_BUCKET_NAME})` : 'local',
         timestamp: new Date().toISOString()

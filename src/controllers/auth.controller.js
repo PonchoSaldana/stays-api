@@ -8,6 +8,28 @@ const Student = db.Student;
 const Admin = db.Admin;
 
 
+/**
+ * @swagger
+ * /api/auth/check-matricula:
+ *   post:
+ *     summary: Verifica si una matrícula está registrada y su estado inicial
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [matricula]
+ *             properties:
+ *               matricula:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Estado de la matrícula
+ *       404:
+ *         description: Matrícula no encontrada
+ */
 exports.checkMatricula = async (req, res) => {
     try {
         const { matricula } = req.body;
@@ -50,6 +72,28 @@ exports.checkMatricula = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/auth/send-code:
+ *   post:
+ *     summary: Envía código de verificación al correo (Onboarding)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [matricula, email]
+ *             properties:
+ *               matricula:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Código enviado
+ */
 exports.sendCode = async (req, res) => {
     try {
         const { matricula, email } = req.body;
@@ -227,6 +271,28 @@ exports.forgotPassword = async (req, res) => {
 const MAX_LOGIN_ATTEMPTS = 15;
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutos
 
+/**
+ * @swagger
+ * /api/auth/login/student:
+ *   post:
+ *     summary: Login de Alumno
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [matricula, password]
+ *             properties:
+ *               matricula:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: JWT retornado
+ */
 exports.loginStudent = async (req, res) => {
     try {
         const { matricula, password } = req.body;
